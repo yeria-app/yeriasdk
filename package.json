@@ -1,0 +1,19 @@
+{
+  "name": "yeria-sdk",
+  "private": true,
+  "workspaces": [
+    "js",
+    "demo"
+  ],
+  "scripts": {
+    "build:js": "npm -w js run build",
+    "build:demo": "npm -w demo run build",
+    "build:all": "npm run build:js && npm run build:demo",
+    "test:js": "npm -w js test",
+    "test:demo": "npm -w demo test",
+    "dev:demo": "npm -w demo run dev",
+    "publish:js": "scripts/publish-js.sh",
+    "publish:py": "scripts/publish-py.sh",
+    "image:demo": "scripts/build-demo-image.sh"
+  }
+}

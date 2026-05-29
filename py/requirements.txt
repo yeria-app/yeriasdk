@@ -1,0 +1,13 @@
+# Core dependencies
+cryptography>=41.0.0
+requests>=2.31.0  # For Ed25519 signatures
+markdown>=3.4.0       # For markdown parsing
+bleach>=6.0.0         # For HTML sanitization
+
+# Development dependencies
+pytest>=7.4.0
+pytest-cov>=4.1.0
+black>=23.0.0
+mypy>=1.5.0
+ruff>=0.0.280
+

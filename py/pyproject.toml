@@ -1,0 +1,66 @@
+[build-system]
+requires = ["setuptools>=65.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "yeriasdk"
+version = "1.0.2"
+description = "A modern Python SDK for generating dynamic JSON interfaces"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "Apache-2.0"}
+authors = [
+    { name = "Numerum" }
+]
+keywords = ["json", "interface", "form-builder", "sdk", "dynamic-ui", "mobile-apps"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+
+dependencies = [
+    "cryptography>=41.0.0",
+    "markdown>=3.4.0",
+    "bleach>=6.0.0",
+    "requests>=2.28.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+    "black>=23.0.0",
+    "mypy>=1.5.0",
+    "ruff>=0.0.280",
+]
+
+[project.urls]
+Homepage = "https://github.com/numerum-tech/yeriasdk"
+Repository = "https://github.com/numerum-tech/yeriasdk.git"
+Issues = "https://github.com/numerum-tech/yeriasdk/issues"
+
+[tool.setuptools.packages.find]
+where = ["."]
+exclude = ["tests*", "examples*"]
+
+[tool.black]
+line-length = 100
+target-version = ['py310']
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+
