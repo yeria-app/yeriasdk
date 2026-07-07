@@ -50,7 +50,8 @@ export const ERROR_CODES = {
     MARKDOWN_PARSE_ERROR: 'JSON_6001',
     URL_PARSE_ERROR: 'JSON_6002',
     FILE_FORMAT_ERROR: 'JSON_6003',
-    NOTIFICATION_FAILED: 'JSON_6004'
+    NOTIFICATION_FAILED: 'JSON_6004',
+    PLATFORM_UNREACHABLE: 'JSON_6005'
 } as const;
 
 export type ErrorCode = typeof ERROR_CODES[keyof typeof ERROR_CODES];
@@ -410,6 +411,41 @@ export class ExternalError extends YeriaAppError {
         this.name = 'ExternalError';
 
         // Preserve original stack if available
+        if (cause?.stack) {
+            this.stack = `${this.stack}\nCaused by: ${cause.stack}`;
+        }
+    }
+}
+
+/**
+ * Yeria platform unreachable — the SDK could not reach the Yeria platform
+ * to resolve a signing key (`kid`). This is a TRANSPORT failure (network
+ * down, timeout, 5xx, or a non-JSON error page such as a gateway 503),
+ * NOT a statement about the key itself.
+ *
+ * Deliberately distinct from a key being expired/unknown: those mean the
+ * inbound token must be rejected (401). This means the SDK could not make
+ * a trust decision at all — the caller should surface a 503 and let the
+ * client retry, never a 401. The name says "Yeria platform" (not the local
+ * key store) so it is unambiguous which side is down.
+ */
+export class YeriaPlatformUnreachableError extends YeriaAppError {
+    constructor(
+        public readonly kid: string,
+        public readonly url: string,
+        public readonly reason: 'network' | 'http_error' | 'malformed_response',
+        public readonly statusCode?: number,
+        public readonly cause?: Error,
+    ) {
+        super(
+            ERROR_CODES.PLATFORM_UNREACHABLE,
+            `Yeria platform unreachable while resolving key '${kid}' `
+                + `(${reason}${statusCode ? ` HTTP ${statusCode}` : ''}). `
+                + `Could not verify the token — this is a transport failure `
+                + `reaching Yeria, not a rejection of the key.`,
+            { kid, url, reason, statusCode, cause: cause?.message },
+        );
+        this.name = 'YeriaPlatformUnreachableError';
         if (cause?.stack) {
             this.stack = `${this.stack}\nCaused by: ${cause.stack}`;
         }

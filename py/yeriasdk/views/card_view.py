@@ -11,7 +11,21 @@ from ..errors.exceptions import InvalidParameterError, MissingRequiredParameterE
 
 
 class CardView(BaseView):
-    """View for displaying a card with stats, sections, and actions"""
+    """Builds a Card SGUI view — a compact "product sheet" spotlighting a single item.
+
+    Header, badge and image are set via ``set_subtitle`` / ``set_description`` /
+    ``set_badge`` / ``set_image``; ``add_stat``, ``add_section`` and
+    ``add_action`` fill the highlight metrics, body sections and footer buttons.
+
+    Extends ``BaseView``; instantiated by the YeriaApp/YeriaUI factory,
+    populated with these builders, then serialized to a JSON view description
+    and signed into a v3 envelope by ``serve()``.
+    """
+    @classmethod
+    def from_json(cls, json_view):
+        """Rehydrate a Card view from a wire JSON payload."""
+        return cls.from_json_as('Card', json_view)
+
 
     def __init__(self, view_id: str, title: str, process_id: Optional[str] = None):
         super().__init__(
@@ -119,7 +133,9 @@ class CardView(BaseView):
             "text": trimmed_text,
             "method": method,
             "confirmMessage": confirm_message,
-            "href": href.strip() if href else None,
+            "href": self._assert_navigation_target(
+                "href", href, allow_relative=True, allow_view_id=False
+            ) if href else None,
             "icon": icon.strip() if icon else None,
             "variant": variant,
         }
@@ -140,4 +156,3 @@ class CardView(BaseView):
     def get_content(self):
         """Get the card content"""
         return self.content
-

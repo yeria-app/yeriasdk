@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { YeriaApp } from '@numerum-tech/yeriasdk';
+import { YeriaApp, YeriaUI } from '@numerum-tech/yeriasdk';
 import { DEMO_KEYS } from '../security/demo-keys';
 
 const router = Router();
@@ -14,23 +14,24 @@ const yeriaApp = new YeriaApp({
 // Comprehensive ActionListView and ActionGridView demonstration
 router.get('/', (req: Request, res: Response) => {
   // Show ActionListView with comprehensive examples
-  const actionList = yeriaApp
-    .createActionListView('comprehensive-actions', 'Vues Actions - Démo Complète')
+  const actionList = YeriaUI
+    .createActionListView('comprehensive-actions', 'ActionListView')
+    .setIntro('Liste verticale d\'actions. Touchez un élément pour naviguer.')
 
     // Action GET standard - AVEC IMAGE
-    .addAction('view-profile', 'Voir le Profil', 'Naviguer vers la page de profil (requête GET)', 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200', false)
+    .addAction('view-profile', 'Voir le Profil', 'Naviguer vers la page de profil (requête GET)', 'img/action-view-profile.png', false)
 
     // Action POST pour créer - SANS IMAGE (icon)
     .addAction('create-item', 'Créer un Nouvel Élément', 'Créer une nouvelle ressource (requête POST)', '', false)
 
     // Action PUT pour mettre à jour - AVEC IMAGE
-    .addAction('update-settings', 'Mettre à Jour les Paramètres', 'Modifier les paramètres existants (requête PUT)', 'https://images.unsplash.com/photo-1556745753-b2904692b3cd?w=200', false)
+    .addAction('update-settings', 'Mettre à Jour les Paramètres', 'Modifier les paramètres existants (requête PUT)', 'img/action-update-settings.png', false)
 
     // Action DELETE - SANS IMAGE (icon)
     .addAction('delete-account', 'Supprimer le Compte', 'Supprimer définitivement le compte (requête DELETE)', '', false)
 
     // Action désactivée - AVEC IMAGE
-    .addAction('premium-feature', 'Fonctionnalité Premium', 'Cette fonctionnalité nécessite une mise à niveau', 'https://images.unsplash.com/photo-1620321023374-d1a68fbc720d?w=200', true)
+    .addAction('premium-feature', 'Fonctionnalité Premium', 'Cette fonctionnalité nécessite une mise à niveau', 'img/action-premium-feature.png', true)
 
     // Action avec métadonnées - SANS IMAGE (icon)
     .addAction('share-content', 'Partager le Contenu', 'Partager ce contenu avec d\'autres', '', false, { category: 'social' })
@@ -42,13 +43,13 @@ router.get('/', (req: Request, res: Response) => {
 
     // Démonstration des différentes méthodes HTTP
     // GET - AVEC IMAGE
-    .addAction('fetch-data', 'Récupérer les Données (GET)', 'Récupérer les données du serveur', 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=200', false)
+    .addAction('fetch-data', 'Récupérer les Données (GET)', 'Récupérer les données du serveur', 'img/action-fetch-data.png', false)
 
     // POST - SANS IMAGE (icon)
     .addAction('submit-form', 'Soumettre le Formulaire (POST)', 'Envoyer les données au serveur', '', false)
 
     // PUT - AVEC IMAGE
-    .addAction('update-resource', 'Mettre à Jour (PUT)', 'Modifier une ressource existante', 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=200', false)
+    .addAction('update-resource', 'Mettre à Jour (PUT)', 'Modifier une ressource existante', 'img/action-update-resource.png', false)
 
     // DELETE - SANS IMAGE (icon)
     .addAction('remove-item', 'Supprimer (DELETE)', 'Supprimer l\'élément sélectionné', '', false);

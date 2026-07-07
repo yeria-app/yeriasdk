@@ -8,7 +8,12 @@ from ..errors.exceptions import MissingRequiredParameterError
 
 
 class Notification:
-    """Notification for sending to a specific user"""
+    """Value object describing a notification to send to a specific user.
+
+    Carries the target user_id plus the message (title, body, optional link)
+    and serializes via ``to_json()`` to the payload the platform signs and
+    sends. Constructed by callers; consumed by YeriaSigner.sign_notification.
+    """
 
     def __init__(self, user_id: str, title: str, body: str, link: Optional[str] = None):
         if not user_id or not title or not body:

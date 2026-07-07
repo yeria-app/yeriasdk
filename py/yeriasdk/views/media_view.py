@@ -10,7 +10,21 @@ from ..types.models import MediaItem, MediaKind, MediaSource
 
 
 class MediaView(BaseView):
-    """View for grouping audio and video resources"""
+    """Builds a Media SGUI view — an audio/video playlist for mobile playback.
+
+    ``add_media_item`` (or ``create_media`` + ``add_media_item``) registers
+    playable entries, and ``set_selected_item`` marks the one shown first in
+    the player.
+
+    Extends ``BaseView``; instantiated by the YeriaApp/YeriaUI factory,
+    populated with these builders, then serialized to a JSON view description
+    and signed into a v3 envelope by ``serve()``.
+    """
+    @classmethod
+    def from_json(cls, json_view):
+        """Rehydrate a Media view from a wire JSON payload."""
+        return cls.from_json_as('Media', json_view)
+
 
     def __init__(self, view_id: str, title: str, process_id: Optional[str] = None):
         super().__init__(
@@ -75,7 +89,7 @@ class MediaView(BaseView):
         loop: Optional[bool] = None,
         controls: Optional[bool] = None,
     ) -> MediaItem:
-        """Create a media item"""
+        """Build a MediaItem (single source) without adding it to the playlist"""
         primary_source = self._normalize_source(MediaSource(src=src, type=type))
 
         return MediaItem(
@@ -89,6 +103,19 @@ class MediaView(BaseView):
             controls=controls if controls is not None else True,
             sources=[primary_source],
         )
+
+    def set_selected_item(self, id: str) -> "MediaView":
+        """Mark the entry shown first in the player. Clears `selected` on every
+        other item so only one is ever selected."""
+        target = id.strip()
+        found = False
+        for it in self.content["items"]:
+            it["selected"] = it["id"] == target
+            if it["selected"]:
+                found = True
+        if not found:
+            raise ValueError(f'set_selected_item: no media item with id "{target}"')
+        return self
 
     def clear_items(self) -> "MediaView":
         """Clear all items"""

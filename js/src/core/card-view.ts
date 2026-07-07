@@ -12,7 +12,22 @@ import { InvalidParameterError, MissingRequiredParameterError } from '../errors'
 
 // CardView is a compact "product sheet" view that highlights a single item with stats, sections and actions.
 
+/**
+ * Builds a Card SGUI view — a compact "product sheet" spotlighting a single item.
+ *
+ * Header, badge and image are set via `setSubtitle`/`setDescription`/`setBadge`/
+ * `setImage`; `addStat`, `addSection` and `addAction` fill the highlight
+ * metrics, body sections and footer buttons.
+ *
+ * Extends {@link BaseView}; instantiated by the YeriaApp/YeriaUI factory,
+ * populated with these builders, then serialized to a JSON view description and
+ * signed into a v3 envelope by `serve()`.
+ */
 export class CardView extends BaseView {
+
+    static fromJson(json: Record<string, unknown>): CardView {
+        return CardView.fromJsonAs(CardView, 'Card', json);
+    }
     constructor(viewId: string, title: string, processId?: string) {
         super({
             id: viewId,
@@ -134,7 +149,12 @@ export class CardView extends BaseView {
             text: trimmedText,
             method,
             confirmMessage: options.confirmMessage,
-            href: options.href?.trim(),
+            href: options.href
+                ? this.assertNavigationTarget('href', options.href, {
+                    allowRelative: true,
+                    allowViewId: false
+                })
+                : undefined,
             icon: options.icon?.trim(),
             variant: options.variant
         };

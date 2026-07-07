@@ -35,7 +35,7 @@ See [py/README.md](./py/README.md) for detailed documentation.
 All language ports share the same core features:
 
 - **12 View Types**: Form, Reader, ActionList, ActionGrid, QRScan, QRDisplay, Message, Card, Carousel, Timeline, Media, Map
-- **Notifications**: Send signed notifications to users via City-Mate platform
+- **Notifications**: Send signed notifications to users via the Yeria platform
 - **Ed25519 Signing**: Secure view signing and verification
 - **Stateless Architecture**: No internal state, perfect for serverless
 - **Validation**: Built-in field and form validation
@@ -48,6 +48,8 @@ Each language port has its own complete documentation:
 
 - [JavaScript/TypeScript Documentation](./js/README.md)
 - [Python Documentation](./py/README.md)
+- [Provider Integration](./docs/provider-integration.md)
+- [Deeplink Implementation Specification](./docs/deeplink-implementation.md)
 
 ## 🏗️ Architecture
 

@@ -277,7 +277,24 @@ def _validate_viewport(v: MapViewport) -> None:
 # ─── MapView class ─────────────────────────────────────────────────────
 
 class MapView(BaseView):
-    """View for displaying geographic data on maps (v2)."""
+    """Builds a Map SGUI view (v2) — geographic data rendered as layers of
+    markers and shapes.
+
+    ``add_marker`` / ``add_shape`` (and the ``add_polygon`` / ``add_circle`` /
+    ``add_polyline`` / ``add_rectangle`` wrappers) populate the default or a
+    named layer declared via ``add_layer``; ``set_viewport`` / ``set_basemap`` /
+    ``set_controls`` configure the map and ``set_pick_mode`` turns it into a
+    location picker.
+
+    Extends ``BaseView``; instantiated by the YeriaApp/YeriaUI factory,
+    populated with these builders, then serialized to a JSON view description
+    and signed into a v3 envelope by ``serve()``.
+    """
+    @classmethod
+    def from_json(cls, json_view):
+        """Rehydrate a Map view from a wire JSON payload."""
+        return cls.from_json_as('Map', json_view)
+
 
     DEFAULT_MARKERS_LAYER_ID = DEFAULT_MARKERS_LAYER_ID
     DEFAULT_SHAPES_LAYER_ID = DEFAULT_SHAPES_LAYER_ID
@@ -323,20 +340,39 @@ class MapView(BaseView):
         return self
 
     def set_pick_mode(self, config: MapPickConfig) -> "MapView":
+        """Turn the map into a location picker that submits the chosen point to config.submit_url"""
         if not isinstance(config.submit_url, str) or not config.submit_url.strip():
             raise MissingRequiredParameterError("pick.submitUrl")
+        submit_url = self._assert_navigation_target(
+            "pick.submitUrl",
+            config.submit_url,
+            allow_relative=True,
+            allow_view_id=False,
+        )
         if config.initial_location is not None:
             _validate_geo_point(config.initial_location, "pick.initialLocation")
         if config.bounds is not None:
             _validate_geo_point(config.bounds.sw, "pick.bounds.sw")
             _validate_geo_point(config.bounds.ne, "pick.bounds.ne")
         self.content["mode"] = "pick"
-        self.content["pick"] = _pick_to_dict(config)
+        self.content["pick"] = _pick_to_dict(
+            MapPickConfig(
+                submit_url=submit_url,
+                prompt=config.prompt,
+                initial_location=config.initial_location,
+                submit_method=config.submit_method,
+                submit_label=config.submit_label,
+                payload_key=config.payload_key,
+                bounds=config.bounds,
+                snap_to_markers=config.snap_to_markers,
+            )
+        )
         return self
 
     # ─── layer management ─────────────────────────────────────────────
 
     def add_layer(self, layer: MapLayer) -> "MapView":
+        """Declare a named layer (markers/shapes/heatmap/tiles/geojson); ids must be unique"""
         if layer is None or not isinstance(layer, MapLayer):
             raise MissingRequiredParameterError("layer")
         if not isinstance(layer.id, str) or not layer.id.strip():
@@ -368,6 +404,7 @@ class MapView(BaseView):
     # ─── markers (default layer or named target) ──────────────────────
 
     def add_marker(self, marker: MapMarker, layer_id: Optional[str] = None) -> "MapView":
+        """Add one marker to the default markers layer, or to the named layer_id if given"""
         if marker is None or not isinstance(marker, MapMarker):
             raise MissingRequiredParameterError("marker")
         if not isinstance(marker.id, str) or not marker.id.strip():
@@ -398,6 +435,7 @@ class MapView(BaseView):
     # ─── shapes (default layer or named target) ───────────────────────
 
     def add_shape(self, shape: MapShape, layer_id: Optional[str] = None) -> "MapView":
+        """Add one shape to the default shapes layer, or to the named layer_id if given"""
         if shape is None or not isinstance(shape, MapShape):
             raise MissingRequiredParameterError("shape")
         if not isinstance(shape.id, str) or not shape.id.strip():
@@ -415,6 +453,7 @@ class MapView(BaseView):
         config: Optional[MapShapeStyle] = None,
         layer_id: Optional[str] = None,
     ) -> "MapView":
+        """Convenience wrapper over add_shape for a Polygon (>= 3 points)"""
         return self.add_shape(MapShape(id=shape_id, type="Polygon", points=points, config=config), layer_id)
 
     def add_circle(
@@ -425,6 +464,7 @@ class MapView(BaseView):
         config: Optional[MapShapeStyle] = None,
         layer_id: Optional[str] = None,
     ) -> "MapView":
+        """Convenience wrapper over add_shape for a Circle (center + radius in meters)"""
         return self.add_shape(MapShape(id=shape_id, type="Circle", center=center, radius=radius, config=config), layer_id)
 
     def add_polyline(
@@ -434,6 +474,7 @@ class MapView(BaseView):
         config: Optional[MapShapeStyle] = None,
         layer_id: Optional[str] = None,
     ) -> "MapView":
+        """Convenience wrapper over add_shape for a Polyline (>= 2 points)"""
         return self.add_shape(MapShape(id=shape_id, type="Polyline", points=points, config=config), layer_id)
 
     def add_rectangle(
@@ -444,6 +485,7 @@ class MapView(BaseView):
         config: Optional[MapShapeStyle] = None,
         layer_id: Optional[str] = None,
     ) -> "MapView":
+        """Convenience wrapper over add_shape for a Rectangle (south-west + north-east corners)"""
         return self.add_shape(MapShape(id=shape_id, type="Rectangle", sw=sw, ne=ne, config=config), layer_id)
 
     def clear_shapes(self, layer_id: Optional[str] = None) -> "MapView":

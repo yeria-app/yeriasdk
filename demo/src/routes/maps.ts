@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { YeriaApp } from '@numerum-tech/yeriasdk';
+import { YeriaApp, YeriaUI } from '@numerum-tech/yeriasdk';
 import { DEMO_KEYS } from '../security/demo-keys';
 
 const router = Router();
@@ -16,8 +16,8 @@ const yeriaApp = new YeriaApp({
 
 // ── Index — links to each demo flavour ────────────────────────────────
 router.get('/', (req: Request, res: Response) => {
-  const list = yeriaApp
-    .createActionListView('maps-index', 'MapView v2 — Échantillons')
+  const list = YeriaUI
+    .createActionListView('maps-index', 'MapView')
     .setIntro('Chaque entrée ci-dessous illustre une facette du contrat MapView v2.');
   list.addAction('/api/maps/single',     'Single marker',          'Cas le plus simple : un seul marqueur, layer par défaut.', '📍', false);
   list.addAction('/api/maps/multi',      'Multi-layer',            'Stores + zones de couverture + heatmap trafic, panneau de toggle.', '🗂️', false);
@@ -32,7 +32,7 @@ router.get('/', (req: Request, res: Response) => {
 
 // ── 1. Single marker, default layer ───────────────────────────────────
 router.get('/single', (req: Request, res: Response) => {
-  const map = yeriaApp
+  const map = YeriaUI
     .createMapView('map-single', 'MapView — un seul marqueur')
     .setIntro('Cas minimal. addMarker sans layerId → atterrit dans _default_markers.')
     .setViewport({ center: { lat: 6.1319, lon: 1.2228 }, zoom: 12 })
@@ -49,7 +49,7 @@ router.get('/single', (req: Request, res: Response) => {
 
 // ── 2. Multi-layer composition ────────────────────────────────────────
 router.get('/multi', (req: Request, res: Response) => {
-  const map = yeriaApp
+  const map = YeriaUI
     .createMapView('map-multi', 'Logistique — Région du Centre')
     .setIntro('Trois layers nommés et toggleables. Le panneau de toggle apparaît grâce à controls.layerToggle.')
     .setBasemap('auto')
@@ -117,7 +117,7 @@ router.get('/multi', (req: Request, res: Response) => {
 // concave vertices) — useful for verifying the renderer handles
 // non-convex outlines and dense vertex counts without artefacts.
 router.get('/polygon', (req: Request, res: Response) => {
-  const map = yeriaApp
+  const map = YeriaUI
     .createMapView('map-polygon', 'Zone polygonale irrégulière')
     .setIntro('Polygone à géométrie irrégulière (concave, vertices denses) autour de la région maritime du Togo.')
     .setViewport({ fitMarkers: true })
@@ -164,7 +164,7 @@ router.get('/polygon', (req: Request, res: Response) => {
 
 // ── 3. All shape types in one shapes layer ────────────────────────────
 router.get('/shapes', (req: Request, res: Response) => {
-  const map = yeriaApp
+  const map = YeriaUI
     .createMapView('map-shapes', 'Toutes les formes')
     .setIntro('Polygon · Circle · Polyline · Rectangle — exercés en un seul layer.')
     .setViewport({ center: { lat: 6.20, lon: 1.20 }, zoom: 10 })
@@ -185,7 +185,7 @@ router.get('/shapes', (req: Request, res: Response) => {
 
 // ── 4. Marker styling: color / size / selected / popup / action ──────
 router.get('/styling', (req: Request, res: Response) => {
-  const map = yeriaApp
+  const map = YeriaUI
     .createMapView('map-styling', 'Markers stylés')
     .setIntro('Couleur, taille, état sélectionné, popup riche, action serveur au clic.')
     .setViewport({ center: { lat: 6.1319, lon: 1.2228 }, zoom: 13 })
@@ -201,7 +201,7 @@ router.get('/styling', (req: Request, res: Response) => {
       popup: {
         title: 'Boutique Phare — Lomé',
         body: '**Ouvert** : 8h–20h · 7j/7\n\nPlus de 200 produits en stock.',
-        image: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=400',
+        image: 'img/map-marker.png',
         actions: [
           { method: 'GET',  url: '/api/stores/flagship/products' },
           { method: 'POST', url: '/api/stores/flagship/contact', body: { reason: 'visit' } }
@@ -222,7 +222,7 @@ router.get('/styling', (req: Request, res: Response) => {
 
 // ── 5. Dark basemap + viewport.bounds ─────────────────────────────────
 router.get('/basemap', (req: Request, res: Response) => {
-  const map = yeriaApp
+  const map = YeriaUI
     .createMapView('map-basemap', 'Basemap dark + bounds')
     .setBasemap('dark')
     .setViewport({
@@ -235,7 +235,7 @@ router.get('/basemap', (req: Request, res: Response) => {
 
 // ── 6. Pick mode (location input) ────────────────────────────────────
 router.get('/pick', (req: Request, res: Response) => {
-  const map = yeriaApp
+  const map = YeriaUI
     .createMapView('map-pick', 'Sélection d\'un point de livraison')
     .setIntro('mode: "pick" — l\'utilisateur place un marqueur et confirme.')
     .setViewport({ center: { lat: 6.1319, lon: 1.2228 }, zoom: 13 })
@@ -263,7 +263,7 @@ router.post('/pick/submit', (req: Request, res: Response) => {
 
 // ── 7. Empty state ────────────────────────────────────────────────────
 router.get('/empty', (req: Request, res: Response) => {
-  const map = yeriaApp
+  const map = YeriaUI
     .createMapView('map-empty', 'Aucune donnée')
     .setEmptyMessage('Aucun point n\'est disponible pour cette zone. Revenez plus tard.')
     .setViewport({ center: { lat: 6.1319, lon: 1.2228 }, zoom: 8 });

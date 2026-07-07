@@ -1,70 +1,71 @@
 {
-    "name": "@numerum-tech/yeriasdk",
-    "version": "1.0.3",
-    "description": "An SDK for generating dynamic interfaces for the Yeria application ecosystem",
-    "main": "dist/index.js",
-    "types": "dist/index.d.ts",
-    "scripts": {
-        "build": "npm run clean && tsc",
-        "clean": "node scripts/clean.mjs",
-        "dev": "tsc --watch",
-        "test": "jest",
-        "test:watch": "jest --watch",
-        "test:coverage": "jest --coverage",
-        "test:sdk": "node -r ts-node/register scripts/test-sdk.ts",
-        "example": "node -r ts-node/register examples/basic-usage.ts",
-        "example:logger": "node -r ts-node/register examples/logger-demo.ts",
-        "example:errors": "node -r ts-node/register examples/error-handling-demo.ts",
-        "lint": "eslint src/**/*.ts",
-        "lint:fix": "eslint src/**/*.ts --fix",
-        "docs": "typedoc src/index.ts --out docs",
-        "prepublishOnly": "npm run build"
-    },
-    "publishConfig": {
-        "access": "public"
-    },
-    "keywords": [
-        "json",
-        "interface",
-        "form-builder",
-        "typescript",
-        "sdk",
-        "dynamic-ui",
-        "mobile-apps"
-    ],
-    "author": "Numerum",
-    "license": "Apache-2.0",
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/numerum-tech/yeriasdk.git"
-    },
-    "homepage": "https://github.com/numerum-tech/yeriasdk#readme",
-    "bugs": {
-        "url": "https://github.com/numerum-tech/yeriasdk/issues"
-    },
-    "devDependencies": {
-        "@types/jest": "^29.5.14",
-        "@types/node": "^22.10.5",
-        "@types/sanitize-html": "^2.14.0",
-        "@typescript-eslint/eslint-plugin": "^7.0.0",
-        "@typescript-eslint/parser": "^7.0.0",
-        "eslint": "^8.57.0",
-        "jest": "^29.7.0",
-        "rimraf": "^5.0.10",
-        "ts-jest": "^29.2.5",
-        "ts-node": "^10.9.2",
-        "typedoc": "^0.26.0",
-        "typescript": "^5.6.3"
-    },
-    "dependencies": {
-        "marked": "^15.0.7",
-        "sanitize-html": "^2.14.0",
-        "zod": "^3.24.1"
-    },
-    "files": [
-        "dist",
-        "README.md",
-        "LICENSE",
-        "NOTICE"
-    ]
+  "name": "@numerum-tech/yeriasdk",
+  "version": "1.2.0",
+  "description": "An SDK for generating dynamic interfaces for the Yeria application ecosystem",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "npm run clean && tsc",
+    "clean": "node scripts/clean.mjs",
+    "dev": "tsc --watch",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:sdk": "node -r ts-node/register scripts/test-sdk.ts",
+    "example": "node -r ts-node/register examples/basic-usage.ts",
+    "example:logger": "node -r ts-node/register examples/logger-demo.ts",
+    "example:errors": "node -r ts-node/register examples/error-handling-demo.ts",
+    "lint": "eslint src/**/*.ts",
+    "lint:fix": "eslint src/**/*.ts --fix",
+    "docs": "typedoc src/index.ts --out docs",
+    "prepublishOnly": "npm run build",
+    "gen:parity-vector": "node scripts/gen-parity-vector.js"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "json",
+    "interface",
+    "form-builder",
+    "typescript",
+    "sdk",
+    "dynamic-ui",
+    "mobile-apps"
+  ],
+  "author": "Numerum",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/numerum-tech/yeriasdk.git"
+  },
+  "homepage": "https://github.com/numerum-tech/yeriasdk#readme",
+  "bugs": {
+    "url": "https://github.com/numerum-tech/yeriasdk/issues"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.14",
+    "@types/node": "^22.10.5",
+    "@types/sanitize-html": "^2.14.0",
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
+    "eslint": "^8.57.0",
+    "jest": "^29.7.0",
+    "rimraf": "^5.0.10",
+    "ts-jest": "^29.2.5",
+    "ts-node": "^10.9.2",
+    "typedoc": "^0.26.0",
+    "typescript": "^5.6.3"
+  },
+  "dependencies": {
+    "marked": "^15.0.7",
+    "sanitize-html": "^2.14.0",
+    "zod": "^3.24.1"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "NOTICE"
+  ]
 }

@@ -4,6 +4,21 @@
 
 The `MediaView` component groups audio and video resources in a consistent playlist for mobile playback. It supports multiple media items with sources, posters, and playback controls.
 
+## Rendering Notes
+
+A MediaView is a **player with an optional playlist** — NOT a carousel/pager.
+Renderers should:
+
+- Show **one player** for the currently selected item (poster + native playback
+  controls; full-screen for video, inline/controls for audio).
+- When `content.items` has **more than one** item, show a **playlist** (a
+  selectable list of the items) so the user can load any item into the player.
+  With a single item, show only the player.
+- Do **not** present items as swipeable full-screen pages (that is `CarouselView`).
+
+`content.title` is the playlist title; each `items[]` entry is an independently
+playable resource described by its `sources`, `poster`, and playback flags.
+
 ## Fields Description
 
 | Field | Type | Required | Description |
@@ -22,6 +37,7 @@ The `MediaView` component groups audio and video resources in a consistent playl
 | `content.items[].autoplay` | `boolean` | No | Auto-play media (default: false) |
 | `content.items[].loop` | `boolean` | No | Loop media (default: false) |
 | `content.items[].controls` | `boolean` | No | Show playback controls (default: true) |
+| `content.items[].selected` | `boolean` | No | Marks the entry shown first in the player. Set via `setSelectedItem(id)` (which clears any other) — never set manually on multiple items. Defaults to the first item. Combine with `autoplay` to start playback on open. |
 | `content.items[].sources` | `MediaSource[]` | Yes | Array of media sources (at least one required) |
 | `content.items[].sources[].src` | `string` | Yes | Media source URL |
 | `content.items[].sources[].type` | `string` | No | MIME type (e.g., "video/mp4", "audio/mpeg") |
@@ -34,7 +50,8 @@ The `MediaView` component groups audio and video resources in a consistent playl
 | Method | Parameters | Returns | Description |
 |--------|------------|---------|-------------|
 | `setIntro(intro)` | `intro` - Introduction text | `this` | Sets the introduction text displayed before media items |
-| `addMediaItem(item)` | `item` - MediaItem object | `this` | Adds a ready-to-play media entry |
+| `addMediaItem(item)` | `item` - MediaItem object | `this` | Adds a ready-to-play media entry (`selected` is ignored here — use `setSelectedItem`) |
+| `setSelectedItem(id)` (py: `set_selected_item`) | `id` - media item id | `this` | Marks that entry as the one shown first; clears `selected` on all others so only one is ever selected |
 | `createMedia(id, kind, src, options?)` | `id` - Media ID<br>`kind` - Media type ('audio' or 'video')<br>`src` - Media source URL<br>`options` - Media options (type, title, description, poster, autoplay, loop, controls) | `MediaItem` | Creates a media item object (does not add it) |
 | `clearItems()` | - | `this` | Removes all media items |
 | `getContent()` | - | `MediaContent` | Returns the complete media content object |

@@ -40,7 +40,22 @@ const sanitizeHtml = (html: string): string => {
     });
 };
 
+/**
+ * Builds a Reader SGUI view — a scrollable rich-content document.
+ *
+ * Content elements are appended in order via `addParagraph`, `addSubTitle`,
+ * `addImage`, `addMarkdown`, `addListField`, `addLink`, `addTable`,
+ * `addCodeBlock`, `addQuote`, `addSeparator` and `addCustomElement`.
+ *
+ * Extends {@link BaseView}; instantiated by the YeriaApp/YeriaUI factory,
+ * populated with these builders, then serialized to a JSON view description and
+ * signed into a v3 envelope by `serve()`.
+ */
 export class ReaderView extends BaseView {
+
+    static fromJson(json: Record<string, unknown>): ReaderView {
+        return ReaderView.fromJsonAs(ReaderView, 'Reader', json);
+    }
     constructor(viewId: string, title: string, processId?: string) {
         super({
             id: viewId,
@@ -60,14 +75,14 @@ export class ReaderView extends BaseView {
     }
 
     /**
-     * Définit l'introduction
+     * Sets the introduction
      */
     setIntro(intro: string): this {
         return this.setIntroText('intro', intro);
     }
 
     /**
-     * Ajoute un paragraphe
+     * Adds a paragraph
      */
     addParagraph(text: string): this {
         const trimmed = text.trim();
@@ -83,7 +98,7 @@ export class ReaderView extends BaseView {
     }
 
     /**
-     * Ajoute une image
+     * Adds an image
      */
     addImage(url: string, alt?: string, caption?: string): this {
         const trimmedUrl = url.trim();
@@ -109,7 +124,7 @@ export class ReaderView extends BaseView {
     }
 
     /**
-     * Ajoute un sous-titre
+     * Adds a subtitle
      */
     addSubTitle(text: string): this {
         const trimmed = text.trim();
@@ -125,7 +140,7 @@ export class ReaderView extends BaseView {
     }
 
     /**
-     * Ajoute du contenu Markdown
+     * Adds Markdown content
      */
     addMarkdown(markdownText: string, options: { sanitize?: boolean } = {}): this {
         const { sanitize = true } = options;
@@ -166,7 +181,7 @@ export class ReaderView extends BaseView {
     }
 
     /**
-     * Ajoute une liste
+     * Adds a list
      */
     addListField(items: string[], ordered: boolean = false): this {
         if (!Array.isArray(items)) {
@@ -185,7 +200,7 @@ export class ReaderView extends BaseView {
     }
 
     /**
-     * Ajoute un lien
+     * Adds a link
      */
     addLink(url: string, text: string, description?: string): this {
         const trimmedUrl = url.trim();
@@ -214,7 +229,7 @@ export class ReaderView extends BaseView {
     }
 
     /**
-     * Ajoute un tableau
+     * Adds a table
      */
     addTable(headers: string[], rows: string[][]): this {
         if (!Array.isArray(headers) || !Array.isArray(rows)) {
@@ -232,7 +247,7 @@ export class ReaderView extends BaseView {
     }
 
     /**
-     * Ajoute un bloc de code
+     * Adds a code block
      */
     addCodeBlock(code: string, language?: string): this {
         const codeElement: ReaderElement = {
@@ -249,7 +264,7 @@ export class ReaderView extends BaseView {
     }
 
     /**
-     * Ajoute une citation
+     * Adds a quote
      */
     addQuote(text: string, author?: string, source?: string): this {
         const quoteElement: ReaderElement = {
@@ -270,7 +285,7 @@ export class ReaderView extends BaseView {
     }
 
     /**
-     * Ajoute un séparateur
+     * Adds a separator
      */
     addSeparator(): this {
         (this.content as ReaderContent).elements.push({
@@ -280,7 +295,7 @@ export class ReaderView extends BaseView {
     }
 
     /**
-     * Ajoute un élément personnalisé
+     * Adds a custom element
      */
     addCustomElement(type: string, data: Record<string, unknown>): this {
         const trimmedType = type.trim();
@@ -297,14 +312,14 @@ export class ReaderView extends BaseView {
     }
 
     /**
-     * Obtient les éléments par type
+     * Gets elements by type
      */
     getElementsByType(type: ReaderElement['type']): ReaderElement[] {
         return (this.content as ReaderContent).elements.filter(element => element.type === type);
     }
 
     /**
-     * Supprime un élément par index
+     * Removes an element by index
      */
     removeElement(index: number): boolean {
         const elements = (this.content as ReaderContent).elements;
@@ -316,7 +331,7 @@ export class ReaderView extends BaseView {
     }
 
     /**
-     * Insère un élément à un index spécifique
+     * Inserts an element at a specific index
      */
     insertElement(index: number, element: ReaderElement): boolean {
         const elements = (this.content as ReaderContent).elements;

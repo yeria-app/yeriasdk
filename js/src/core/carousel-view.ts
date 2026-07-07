@@ -4,7 +4,23 @@ import { MissingRequiredParameterError, ElementNotFoundError } from '../errors';
 
 // CarouselView organises multiple spotlight slides for mobile hero banners or promotional decks.
 
+/**
+ * Builds a Carousel SGUI view — a sequence of spotlight slides for hero banners
+ * or promotional decks.
+ *
+ * `addSlide` (or `createSlide` + `addSlide`) appends slides, `addSlideAction`
+ * attaches action buttons to a slide, and `setSettings` tunes autoplay, looping
+ * and indicator behaviour.
+ *
+ * Extends {@link BaseView}; instantiated by the YeriaApp/YeriaUI factory,
+ * populated with these builders, then serialized to a JSON view description and
+ * signed into a v3 envelope by `serve()`.
+ */
 export class CarouselView extends BaseView {
+
+    static fromJson(json: Record<string, unknown>): CarouselView {
+        return CarouselView.fromJsonAs(CarouselView, 'Carousel', json);
+    }
     constructor(viewId: string, title: string, processId?: string) {
         super({
             id: viewId,
@@ -58,6 +74,7 @@ export class CarouselView extends BaseView {
         return this;
     }
 
+    // Builds a CarouselSlide object without adding it to the view.
     createSlide(
         id: string,
         title: string,
@@ -100,7 +117,12 @@ export class CarouselView extends BaseView {
             text: text.trim(),
             method,
             confirmMessage: options.confirmMessage,
-            href: options.href?.trim(),
+            href: options.href
+                ? this.assertNavigationTarget('href', options.href, {
+                    allowRelative: true,
+                    allowViewId: false
+                })
+                : undefined,
             icon: options.icon?.trim(),
             variant: options.variant
         };

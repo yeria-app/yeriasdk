@@ -1,0 +1,4 @@
+
+# build artifacts
+*.egg-info/
+__pycache__/

@@ -12,7 +12,22 @@ export interface QRDisplayContent {
     qrConfig?: QRConfig;
 }
 
+/**
+ * Builds an SGUI `QRDisplay` view — renders a QR code (from a URL or base64
+ * image) with a title and description, plus an optional action button.
+ *
+ * Builder methods: `setIntro` (intro text), `setQRCode` (image + title +
+ * description + optional QRConfig), `submitButton` (optional action such as
+ * Share/Export, POSTed to {service.baseUrl}/{viewId}).
+ *
+ * Extends {@link BaseView}. Created via the YeriaApp/YeriaUI factory, populated
+ * with these builders, then serialized and signed into a v3 envelope by serve().
+ */
 export class QRDisplayView extends BaseView {
+
+    static fromJson(json: Record<string, unknown>): QRDisplayView {
+        return QRDisplayView.fromJsonAs(QRDisplayView, 'QRDisplay', json);
+    }
     constructor(viewId: string, title: string, processId?: string) {
         super({
             id: viewId,
@@ -35,7 +50,7 @@ export class QRDisplayView extends BaseView {
     }
 
     /**
-     * Définit l'introduction
+     * Sets the introduction
      */
     setIntro(intro: string): this {
         return this.setIntroText('intro', intro);
@@ -71,7 +86,7 @@ export class QRDisplayView extends BaseView {
             throw new MissingRequiredParameterError('qrImage, title, and description');
         }
 
-        // Validation de l'URL ou base64
+        // URL or base64 validation
         if (!(qrImage.startsWith('http') || qrImage.startsWith('data:image/'))) {
             throw new InvalidParameterError('qrImage', qrImage, 'Invalid QR image. Provide a valid URL or base64 string.');
         }

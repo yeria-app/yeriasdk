@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { YeriaApp } from '@numerum-tech/yeriasdk';
+import { YeriaApp, YeriaUI } from '@numerum-tech/yeriasdk';
 import QRCode from 'qrcode';
 import { DEMO_KEYS } from '../security/demo-keys';
 
@@ -14,8 +14,8 @@ const yeriaApp = new YeriaApp({
 
 // Main QR route - ActionListView showing QR view types
 router.get('/', (req: Request, res: Response) => {
-  const actionList = yeriaApp
-    .createActionListView('qr-types', 'Vues QR - Types de Vues')
+  const actionList = YeriaUI
+    .createActionListView('qr-types', 'QR Views')
     .addAction('/api/qr/scan', 'QRScanView 📷', 'Scanner des codes QR avec validation et prévisualisation', '📱', false)
     .addAction('/api/qr/display', 'QRDisplayView 🔲', 'Afficher un QR code unique', '🖼️', false);
 
@@ -24,8 +24,8 @@ router.get('/', (req: Request, res: Response) => {
 
 // Comprehensive QRScanView demonstration
 router.get('/scan', (req: Request, res: Response) => {
-  const scanner = yeriaApp
-    .createQRScanView('comprehensive-qr-scan', 'QRScanView - Démo Complète')
+  const scanner = YeriaUI
+    .createQRScanView('comprehensive-qr-scan', 'QRScanView')
     .setIntro('Cette vue démontre toutes les fonctionnalités de scan QR : auto-submission, validation, prévisualisation et bouton de confirmation')
     .setValidation(
       'Le code doit commencer par "PROD-" suivi de 6 à 12 chiffres',
@@ -50,8 +50,8 @@ router.get('/display', async (req: Request, res: Response) => {
     margin: 1,
   });
 
-  const display = yeriaApp
-    .createQRDisplayView('qr-display-sample', 'QR Code Yeria SDK')
+  const display = YeriaUI
+    .createQRDisplayView('qr-display-sample', 'QRDisplayView')
     .setIntro('Démonstration de QRDisplayView : un QR code fourni par le service.')
     .setQRCode(
       qrDataUri,

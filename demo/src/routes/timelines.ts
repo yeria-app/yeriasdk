@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { YeriaApp } from '@numerum-tech/yeriasdk';
+import { YeriaApp, YeriaUI } from '@numerum-tech/yeriasdk';
 import { DEMO_KEYS } from '../security/demo-keys';
 
 const router = Router();
@@ -13,8 +13,8 @@ const yeriaApp = new YeriaApp({
 
 // Comprehensive TimelineView demonstration with all features
 router.get('/', (req: Request, res: Response) => {
-  const timeline = yeriaApp
-    .createTimelineView('comprehensive-timeline', 'TimelineView - Démo Complète')
+  const timeline = YeriaUI
+    .createTimelineView('comprehensive-timeline', 'TimelineView')
     .setIntro('Cette timeline démontre toutes les fonctionnalités disponibles avec différents statuts (completed, active, pending) et types d\'événements')
 
     // Événements complétés (completed) - Commande passée

@@ -269,17 +269,17 @@ describe('MapView v2', () => {
 
         it('view-mode requires drawable data or emptyMessage at serve()', () => {
             // empty content, view mode → must fail validation
-            expect(() => view.serve()).toThrow();
+            expect(() => view.build()).toThrow();
         });
 
         it('view-mode passes when emptyMessage is set even with no layers', () => {
             view.setEmptyMessage('No data yet.');
-            expect(() => view.serve()).not.toThrow();
+            expect(() => view.build()).not.toThrow();
         });
 
         it('pick-mode passes validation without drawable layers', () => {
             view.setPickMode({ submitUrl: '/api/loc/pick' });
-            expect(() => view.serve()).not.toThrow();
+            expect(() => view.build()).not.toThrow();
         });
     });
 

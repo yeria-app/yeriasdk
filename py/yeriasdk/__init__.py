@@ -3,15 +3,23 @@ Yeria SDK for Python
 A stateless backend library for building views that are sent to renderers (mobile or web)
 """
 
-from .core.yeria_app import (
-    YeriaApp,
-    YeriaAppConfig,
+# ── Public surface: two symbols ──────────────────────────────────────────
+# `app`     — the secret-holding half: sign / verify / notify / rotate.
+# `YeriaUI` — the keyless view factory: YeriaUI.create_form_view(...), etc.
+from .core.yeria_app import YeriaApp, YeriaAppConfig
+from .core.yeria_ui import YeriaUI
+# Protocol types
+from .core.yeria_protocol import (
     SignedEnvelope,
-    UserTokenClaims,
-    UserProfile,
+    DecodedPayload,
+    YeriaTokenClaims,
+    UserDetails,
+    YeriaPublicKey,
     PublicKeyResolver,
 )
-from .core.key_store import YeriaKeyStore, KeyLookup
+# NOTE: the signer, envelope verifier, user-token verifier, Yeria HTTP client
+# (YeriaPlatform), and the kid key cache (YeriaPublicKeys) are INTERNAL — all
+# reachable through `app`. They are intentionally not exported.
 from .core.base_view import BaseView
 from .core.notification import Notification
 from .views import (
@@ -19,6 +27,7 @@ from .views import (
     ReaderView,
     ActionListView,
     ActionGridView,
+    IconGridView,
     QRScanView,
     QRDisplayView,
     MessageView,
@@ -49,23 +58,26 @@ from .errors import (
     ViewValidationError,
     MaxViewsExceededError,
     ExternalError,
+    YeriaPlatformUnreachableError,
     MarkdownParseError,
     NoProcessContextError,
     ERROR_CODES,
 )
 
-__version__ = "3.0.0"
+__version__ = "1.2.0"
 
 __all__ = [
-    # Core classes
+    # Public surface: two symbols
     "YeriaApp",
     "YeriaAppConfig",
+    "YeriaUI",
+    # Protocol types
     "SignedEnvelope",
-    "UserTokenClaims",
-    "UserProfile",
+    "DecodedPayload",
+    "YeriaTokenClaims",
+    "UserDetails",
+    "YeriaPublicKey",
     "PublicKeyResolver",
-    "YeriaKeyStore",
-    "KeyLookup",
     "BaseView",
     "Notification",
     # View classes
@@ -73,6 +85,7 @@ __all__ = [
     "ReaderView",
     "ActionListView",
     "ActionGridView",
+    "IconGridView",
     "QRScanView",
     "QRDisplayView",
     "MessageView",
@@ -102,6 +115,7 @@ __all__ = [
     "ViewValidationError",
     "MaxViewsExceededError",
     "ExternalError",
+    "YeriaPlatformUnreachableError",
     "MarkdownParseError",
     "NoProcessContextError",
     "ERROR_CODES",

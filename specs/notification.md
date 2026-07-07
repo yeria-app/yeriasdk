@@ -2,18 +2,18 @@
 
 ## Description
 
-The `Notification` component enables sending signed notifications to the City-Mate platform, which then distributes them to specific users. Notifications are signed using Ed25519 (same as views) and pushed to the platform endpoint. Each notification targets a single user and contains a message with title, body, and optional in-app navigation links.
+The `Notification` component enables sending signed notifications to the Yeria platform, which then distributes them to specific users. Notifications are signed using Ed25519 (same as views) and pushed to the Yeria backend (`POST {baseUrl}/api/v1/user/notifications`). Each notification targets a single user and contains a message with title, body, and optional in-app navigation links.
 
 **Key Features:**
 - User-specific targeting (userId required)
 - Signed notifications with Ed25519
-- Push model: SDK sends to City-Mate platform
+- Push model: SDK sends to the Yeria platform
 - Optional in-app navigation links
 - Platform distributes to users
 
 ## ⚠ Subscription Requirement (fail-closed consent gate)
 
-**The City-Mate platform only delivers notifications when the target user has explicitly subscribed to the sending service.** There is no broadcast primitive and no way for a service to create a subscription on a user's behalf — subscriptions are always user-initiated from the City-Mate mobile or web app.
+**The Yeria platform only delivers notifications when the target user has explicitly subscribed to the sending service.** There is no broadcast primitive and no way for a service to create a subscription on a user's behalf — subscriptions are always user-initiated from the Yeria mobile or web app.
 
 When your service signs and POSTs a notification:
 
@@ -28,7 +28,7 @@ Rejected notifications are **not** persisted — your service cannot probe the u
 
 ### Recommended onboarding UX
 
-Since your service cannot auto-subscribe a user, present an "Enable notifications" call-to-action in your Yeria views when a user first engages with the service. The CTA should deep-link to the City-Mate subscription sheet (`yeria://services/{serviceId}/subscribe` on mobile, or `/services/{serviceId}?subscribe=1` on web), which prompts the user to grant consent.
+Since your service cannot auto-subscribe a user, present an "Enable notifications" call-to-action in your Yeria views when a user first engages with the service. The CTA should deep-link to the Yeria subscription sheet (`yeria://services/{serviceId}/subscribe` on mobile, or `/services/{serviceId}?subscribe=1` on web), which prompts the user to grant consent.
 
 Handle `SUBSCRIPTION_*` error codes gracefully — a 403 from the notifications endpoint is an expected outcome for any user who has not opted in, not an infrastructure failure. Consider rate-limiting retries so your service doesn't hammer the endpoint on every rejection.
 
@@ -59,10 +59,10 @@ When a notification is signed, it follows this structure:
 
 | Method | Parameters | Returns | Description |
 |--------|------------|---------|-------------|
-| `createNotification(userId, title, body, link?)` | `userId` - User ID<br>`title` - Notification title<br>`body` - Notification body<br>`link` - Optional navigation link | `Notification` | Creates a notification instance |
+| `new Notification(userId, title, body, link?)` | `userId` - User ID<br>`title` - Notification title<br>`body` - Notification body<br>`link` - Optional navigation link | `Notification` | Creates a notification instance |
 | `setLink(link)` | `link` - Navigation link URL | `this` | Sets the optional in-app navigation link |
 | `signNotification(notification)` | `notification` - Notification instance | `SecureNotificationResponse` | Signs the notification with Ed25519 |
-| `sendNotification(notification, platformUrl?)` | `notification` - Notification instance<br>`platformUrl` - Optional platform URL | `Promise<void>` | Sends signed notification to City-Mate platform |
+| `sendNotification(notification)` | `notification` - Notification instance | `Promise<void>` | Signs and POSTs the notification to `{baseUrl}/api/v1/user/notifications` |
 | `toJSON()` | - | `NotificationPayload` | Returns notification payload as JSON |
 
 ## JavaScript Sample Code
@@ -70,15 +70,14 @@ When a notification is signed, it follows this structure:
 ### Basic Notification
 
 ```javascript
-import { YeriaApp } from '@numerum-tech/yeriasdk';
+import { YeriaApp, Notification } from '@numerum-tech/yeriasdk';
 
-const yeriaApp = new YeriaApp({ 
+const yeriaApp = new YeriaApp({
     appId: 'my-app',
-    platformUrl: 'https://platform.yeria.com/api/notifications'
+    baseUrl: 'https://yeria.app'
 });
 
-const notification = yeriaApp
-    .createNotification('user-123', 'Welcome!', 'Thank you for joining City-Mate')
+const notification = new Notification('user-123', 'Welcome!', 'Thank you for joining Yeria')
     .setLink('/welcome');
 
 const signedNotification = yeriaApp.signNotification(notification);
@@ -88,13 +87,12 @@ const signedNotification = yeriaApp.signNotification(notification);
 ### Notification with In-App Link
 
 ```javascript
-const notification = yeriaApp
-    .createNotification(
-        'user-456',
-        'New Message',
-        'You have a new message from John',
-        '/messages/123'  // Optional link parameter
-    );
+const notification = new Notification(
+    'user-456',
+    'New Message',
+    'You have a new message from John',
+    '/messages/123'  // Optional link parameter
+);
 
 await yeriaApp.sendNotification(notification);
 ```
@@ -102,12 +100,11 @@ await yeriaApp.sendNotification(notification);
 ### Notification Without Link
 
 ```javascript
-const notification = yeriaApp
-    .createNotification(
-        'user-789',
-        'Reminder',
-        'Don\'t forget to complete your profile'
-    );
+const notification = new Notification(
+    'user-789',
+    'Reminder',
+    'Don\'t forget to complete your profile'
+);
 
 await yeriaApp.sendNotification(notification);
 ```
@@ -115,32 +112,16 @@ await yeriaApp.sendNotification(notification);
 ### Manual Notification Sending
 
 ```javascript
-const notification = yeriaApp
-    .createNotification('user-123', 'Alert', 'System maintenance scheduled');
+const notification = new Notification('user-123', 'Alert', 'System maintenance scheduled');
 
 const signedNotification = yeriaApp.signNotification(notification);
 
 // Send manually using your HTTP client
-const response = await fetch('https://platform.yeria.com/api/notifications', {
+const response = await fetch('https://yeria.app/api/v1/user/notifications', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(signedNotification)
 });
-```
-
-### Notification with Dynamic Platform URL
-
-```javascript
-const yeriaApp = new YeriaApp({ appId: 'my-app' });
-
-const notification = yeriaApp
-    .createNotification('user-123', 'Update', 'Your order has been shipped');
-
-// Override platform URL per call
-await yeriaApp.sendNotification(
-    notification,
-    'https://staging.yeria.com/api/notifications'
-);
 ```
 
 ## Python Sample Code
@@ -148,19 +129,15 @@ await yeriaApp.sendNotification(
 ### Basic Notification
 
 ```python
-from yeriasdk import YeriaApp, YeriaAppConfig
+from yeriasdk import YeriaApp, YeriaAppConfig, Notification
 
 config = YeriaAppConfig(
     app_id='my-app',
-    platform_url='https://platform.yeria.com/api/notifications'
+    base_url='https://yeria.app'
 )
 json_app = YeriaApp(config)
 
-notification = json_app.create_notification(
-    'user-123',
-    'Welcome!',
-    'Thank you for joining City-Mate'
-)
+notification = Notification('user-123', 'Welcome!', 'Thank you for joining Yeria')
 notification.set_link('/welcome')
 
 signed_notification = json_app.sign_notification(notification)
@@ -170,7 +147,7 @@ signed_notification = json_app.sign_notification(notification)
 ### Notification with In-App Link
 
 ```python
-notification = json_app.create_notification(
+notification = Notification(
     'user-456',
     'New Message',
     'You have a new message from John',
@@ -183,7 +160,7 @@ json_app.send_notification(notification)
 ### Notification Without Link
 
 ```python
-notification = json_app.create_notification(
+notification = Notification(
     'user-789',
     'Reminder',
     'Don\'t forget to complete your profile'
@@ -197,7 +174,7 @@ json_app.send_notification(notification)
 ```python
 import requests
 
-notification = json_app.create_notification(
+notification = Notification(
     'user-123',
     'Alert',
     'System maintenance scheduled'
@@ -221,7 +198,7 @@ payload = {
 }
 
 response = requests.post(
-    'https://platform.yeria.com/api/notifications',
+    'https://yeria.app/api/v1/user/notifications',
     json=payload
 )
 ```
@@ -237,7 +214,7 @@ response = requests.post(
     "userId": "user-123",
     "message": {
       "title": "Welcome!",
-      "body": "Thank you for joining City-Mate",
+      "body": "Thank you for joining Yeria",
       "link": "/welcome"
     }
   }
@@ -253,7 +230,7 @@ Add notification-related configuration to `YeriaAppConfig`:
 ```typescript
 interface YeriaAppConfig {
     appId: string;
-    platformUrl?: string;        // City-Mate platform endpoint URL
+    baseUrl?: string;             // Yeria platform base URL (e.g. https://yeria.app)
     notificationTimeout?: number; // HTTP request timeout in ms (default: 5000)
     // ... other config options
 }
@@ -263,15 +240,15 @@ interface YeriaAppConfig {
 @dataclass
 class YeriaAppConfig:
     app_id: str
-    platform_url: Optional[str] = None  # City-Mate platform endpoint URL
-    notification_timeout: int = 5  # HTTP request timeout in seconds
+    base_url: Optional[str] = None  # Yeria platform base URL (e.g. https://yeria.app)
+    notification_timeout: int = 5   # HTTP request timeout in seconds
     # ... other config options
 ```
 
 ## Error Handling
 
 - `MissingRequiredParameterError`: Thrown if userId, title, or body is missing
-- `ConfigurationError`: Thrown if platform URL is not configured when calling `sendNotification()`
+- `ConfigurationError`: Thrown if `baseUrl` is not configured when calling `sendNotification()`
 - `ExternalError`: Thrown if HTTP request fails when sending notification
 
 ## Signing Details
@@ -285,13 +262,11 @@ Notifications use the same Ed25519 signing mechanism as views:
 
 ## Platform Integration
 
-The City-Mate platform receives signed notifications via HTTP POST:
+The Yeria platform receives signed notifications via HTTP POST:
 
-- **Endpoint**: Configured via `platformUrl` in `YeriaAppConfig` or passed to `sendNotification()`
+- **Endpoint**: `{baseUrl}/api/v1/user/notifications` (`baseUrl` from `YeriaAppConfig`)
 - **Method**: POST
 - **Content-Type**: application/json
 - **Body**: Signed notification JSON (see Complete JSON Example above)
 
 The platform verifies the signature and distributes the notification to the target user.
-
-

@@ -11,7 +11,7 @@ A stateless backend library for building views that are sent to renderers (mobil
 - **Stateless Architecture**: No internal state, perfect for serverless and microservices
 - **Ed25519 Signing**: Secure view signing and verification using Ed25519 cryptography
 - **12 View Types**: Form, Reader, ActionList, ActionGrid, QRScan, QRDisplay, Message, Card, Carousel, Timeline, Media, Map
-- **Notifications**: Send signed notifications to users via City-Mate platform
+- **Notifications**: Send signed notifications to users via the Yeria platform
 - **Type Safety**: Full type definitions using Python dataclasses and type hints
 - **Validation**: Built-in field and form validation
 - **Security**: XSS protection, URL validation, input sanitization
@@ -45,6 +45,29 @@ form.submit_button("Register")
 response = app.serve(form)
 print(response.view)  # The view JSON
 print(response.signature)  # Ed25519 signature
+```
+
+## Static JSON Views
+
+```python
+from yeriasdk import YeriaApp, YeriaAppConfig
+
+app = YeriaApp(YeriaAppConfig(app_id="my-app"))
+
+envelope = app.serve_raw_view(
+    {
+        "id": "home-static",
+        "type": "Reader",
+        "content": {
+            "title": "Bienvenue",
+            "body": [
+                {"type": "paragraph", "text": "Cette vue vient d'un bloc JSON."}
+            ],
+        },
+    }
+)
+print(envelope.payload)
+print(envelope.signature)
 ```
 
 ## View Types

@@ -11,7 +11,21 @@ from ..errors.exceptions import MissingRequiredParameterError
 
 
 class TimelineView(BaseView):
-    """View for displaying timeline items"""
+    """Builds a Timeline SGUI view — a chronological list of events such as
+    onboarding steps or activity feeds.
+
+    Entries are appended via ``add_item`` / ``add_event`` or replaced wholesale
+    with ``set_items``; ``set_intro`` adds lead context text.
+
+    Extends ``BaseView``; instantiated by the YeriaApp/YeriaUI factory,
+    populated with these builders, then serialized to a JSON view description
+    and signed into a v3 envelope by ``serve()``.
+    """
+    @classmethod
+    def from_json(cls, json_view):
+        """Rehydrate a Timeline view from a wire JSON payload."""
+        return cls.from_json_as('Timeline', json_view)
+
 
     def __init__(self, view_id: str, title: str, process_id: Optional[str] = None):
         super().__init__(
@@ -67,7 +81,7 @@ class TimelineView(BaseView):
         status: Optional[TimelineStatus] = None,
         icon: Optional[str] = None,
     ) -> "TimelineView":
-        """Add an event to the timeline"""
+        """Convenience builder that assembles a timeline entry from primitive fields and appends it"""
         item = TimelineItem(
             id=id,
             title=title,

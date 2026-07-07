@@ -5,6 +5,10 @@
 import { generateKeyPairSync } from 'crypto';
 import { YeriaApp } from '../src/core/yeria-app';
 import { FormView } from '../src/core/form-view';
+import { YeriaUI } from '../src/core/yeria-ui';
+import { YeriaEnvelopeVerifier } from '../src/core/security/yeria-envelope-verifier';
+import { YeriaSigner } from '../src/core/security/yeria-signer';
+import { YeriaUserTokenVerifier } from '../src/core/security/yeria-user-token-verifier';
 import { SignatureVerificationError, ViewExpiredError } from '../src/errors';
 
 describe('YeriaApp - Security Tests', () => {
@@ -19,10 +23,10 @@ describe('YeriaApp - Security Tests', () => {
 
     describe('Signature Collision Prevention', () => {
         it('should prevent collision attacks with different view/timestamp combinations', () => {
-            const form1 = yeriaApp.createFormView('form-1', 'Test Form 1');
+            const form1 = YeriaUI.createFormView('form-1', 'Test Form 1');
             form1.addTextField('name', 'Name', true);
 
-            const form2 = yeriaApp.createFormView('form-2', 'Test Form 2');
+            const form2 = YeriaUI.createFormView('form-2', 'Test Form 2');
             form2.addTextField('email', 'Email', true);
 
             const r1 = yeriaApp.serve(form1);
@@ -37,7 +41,7 @@ describe('YeriaApp - Security Tests', () => {
         });
 
         it('should create different signatures for modified views', () => {
-            const form = yeriaApp.createFormView('test-form', 'Original');
+            const form = YeriaUI.createFormView('test-form', 'Original');
             form.addTextField('field1', 'Field 1', true);
             const r1 = yeriaApp.serve(form);
 
@@ -48,7 +52,7 @@ describe('YeriaApp - Security Tests', () => {
         });
 
         it('should verify a fresh envelope', () => {
-            const form = yeriaApp.createFormView('test-form', 'Test');
+            const form = YeriaUI.createFormView('test-form', 'Test');
             form.addTextField('name', 'Name', true);
             const envelope = yeriaApp.serve(form);
 
@@ -56,7 +60,7 @@ describe('YeriaApp - Security Tests', () => {
         });
 
         it('should reject tampered payload', () => {
-            const form = yeriaApp.createFormView('test-form', 'Test');
+            const form = YeriaUI.createFormView('test-form', 'Test');
             form.addTextField('name', 'Name', true);
             const envelope = yeriaApp.serve(form);
 
@@ -69,7 +73,7 @@ describe('YeriaApp - Security Tests', () => {
         });
 
         it('should reject when signature is replaced', () => {
-            const form = yeriaApp.createFormView('test-form', 'Test');
+            const form = YeriaUI.createFormView('test-form', 'Test');
             form.addTextField('name', 'Name', true);
             const envelope = yeriaApp.serve(form);
 
@@ -79,7 +83,7 @@ describe('YeriaApp - Security Tests', () => {
 
         it('should reject envelope signed by a different app', () => {
             const otherApp = new YeriaApp({ appId: 'wrong-app' });
-            const form = otherApp.createFormView('test-form', 'Test');
+            const form = YeriaUI.createFormView('test-form', 'Test');
             form.addTextField('name', 'Name', true);
             const envelope = otherApp.serve(form);
 
@@ -91,7 +95,7 @@ describe('YeriaApp - Security Tests', () => {
 
     describe('Envelope shape', () => {
         it('should return { payload: string, signature: string }', () => {
-            const form = yeriaApp.createFormView('shape-test', 'Test');
+            const form = YeriaUI.createFormView('shape-test', 'Test');
             form.addTextField('name', 'Name', true);
             const envelope = yeriaApp.serve(form);
 
@@ -115,8 +119,34 @@ describe('YeriaApp - Security Tests', () => {
             expect(envelope.signature).toBeDefined();
         });
 
+        it('should rehydrate + serve a pre-built static view JSON block', () => {
+            const view = YeriaUI.fromJson({
+                id: 'static-home',
+                type: 'Reader',
+                content: {
+                    title: 'Accueil',
+                    elements: [{ type: 'paragraph', text: 'Vue statique' }]
+                }
+            });
+            const envelope = yeriaApp.serve(view);
+
+            const decoded = JSON.parse(envelope.payload);
+            expect(decoded.view).toMatchObject({
+                id: 'static-home',
+                type: 'Reader'
+            });
+            expect(YeriaApp.verifySignature(yeriaApp.getServicePublicKey(), envelope.payload, envelope.signature)).toBe(true);
+        });
+
+        it('should reject malformed static view JSON blocks', () => {
+            expect(() => YeriaUI.fromJson({
+                type: 'Reader',
+                content: {}
+            } as Record<string, unknown>)).toThrow();
+        });
+
         it('should expose a static signing helper', () => {
-            const form = yeriaApp.createFormView('static-sign', 'Static Sign Test');
+            const form = YeriaUI.createFormView('static-sign', 'Static Sign Test');
             form.addTextField('name', 'Name', true);
             const viewPayload = form.toJSON();
             const timestamp = Date.now();
@@ -141,7 +171,7 @@ describe('YeriaApp - Security Tests', () => {
                 viewExpirationMinutes: 0.001
             });
 
-            const form = expApp.createFormView('exp-form', 'Expiring');
+            const form = YeriaUI.createFormView('exp-form', 'Expiring');
             form.addTextField('name', 'Name', true);
 
             const envelope = expApp.serve(form);
@@ -154,39 +184,86 @@ describe('YeriaApp - Security Tests', () => {
 
     describe('Static verifySignature method', () => {
         it('should verify signatures with public key only', () => {
-            const form = yeriaApp.createFormView('static-test', 'Static Test');
+            const form = YeriaUI.createFormView('static-test', 'Static Test');
             form.addTextField('name', 'Name', true);
 
             const envelope = yeriaApp.serve(form);
-            const publicKey = yeriaApp.getPublicKey();
+            const publicKey = yeriaApp.getServicePublicKey();
 
             expect(YeriaApp.verifySignature(publicKey, envelope.payload, envelope.signature)).toBe(true);
         });
 
         it('should reject invalid signatures', () => {
-            const form = yeriaApp.createFormView('static-test', 'Static Test');
+            const form = YeriaUI.createFormView('static-test', 'Static Test');
             form.addTextField('name', 'Name', true);
 
             const envelope = yeriaApp.serve(form);
-            const publicKey = yeriaApp.getPublicKey();
+            const publicKey = yeriaApp.getServicePublicKey();
 
             const fake = Buffer.from('totally-not-a-valid-signature-bytes').toString('base64');
             expect(YeriaApp.verifySignature(publicKey, envelope.payload, fake)).toBe(false);
         });
 
         it('should reject when payload is tampered', () => {
-            const form = yeriaApp.createFormView('test-form2', 'Test');
+            const form = YeriaUI.createFormView('test-form2', 'Test');
             form.addTextField('name', 'Name', true);
 
             const envelope = yeriaApp.serve(form);
-            const publicKey = yeriaApp.getPublicKey();
+            const publicKey = yeriaApp.getServicePublicKey();
 
             const tampered = envelope.payload.replace('test-form2', 'pwned');
             expect(YeriaApp.verifySignature(publicKey, tampered, envelope.signature)).toBe(false);
         });
     });
 
-    describe('Static verifyUserToken method', () => {
+    describe('Extracted architecture components', () => {
+        it('signer and envelope verifier work without YeriaApp facade', () => {
+            const signer = new YeriaSigner();
+            const envelope = signer.signView({
+                id: 'direct-component',
+                type: 'Reader',
+                content: { title: 'Direct' }
+            }, 'component-app');
+
+            const verifier = new YeriaEnvelopeVerifier({
+                appId: 'component-app',
+                publicKey: signer.getServicePublicKey(),
+                viewExpirationMinutes: 1
+            });
+
+            expect(verifier.verifyIntegrity(envelope)).toBe(true);
+        });
+
+        it('token verifier works without YeriaApp facade', () => {
+            const { privateKey, publicKey } = generateKeyPairSync('rsa', {
+                modulusLength: 2048,
+                publicKeyEncoding: { type: 'spki', format: 'pem' },
+                privateKeyEncoding: { type: 'pkcs8', format: 'pem' },
+            });
+            const signingKey = privateKey as unknown as string;
+            const verifyKey = publicKey as unknown as string;
+            const headerB64 = Buffer.from(JSON.stringify({ alg: 'RS256', typ: 'JWT', kid: 'key_direct' })).toString('base64url');
+            const payloadB64 = Buffer.from(JSON.stringify({
+                sub: '42',
+                aud: '7',
+                iss: 'yeria',
+                exp: Math.floor(Date.now() / 1000) + 600,
+            })).toString('base64url');
+            const signingInput = `${headerB64}.${payloadB64}`;
+            const { createSign } = require('crypto');
+            const signer = createSign('RSA-SHA256');
+            signer.update(signingInput);
+            signer.end();
+            const signature = signer.sign(signingKey).toString('base64url');
+            const jwt = `${signingInput}.${signature}`;
+
+            const claims = YeriaUserTokenVerifier.verifyYeriaToken(jwt, verifyKey, 7);
+            expect(claims.sub).toBe('42');
+            expect(claims.kid).toBe('key_direct');
+        });
+    });
+
+    describe('Static verifyYeriaToken method', () => {
         const { privateKey, publicKey } = generateKeyPairSync('rsa', {
             modulusLength: 2048,
             publicKeyEncoding: { type: 'spki', format: 'pem' },
@@ -219,21 +296,21 @@ describe('YeriaApp - Security Tests', () => {
                 exp: nowSec() + 600,
                 iat: nowSec(),
             });
-            const claims = YeriaApp.verifyUserToken(jwt, yeriaPubPem, 7);
+            const claims = YeriaApp.verifyYeriaToken(jwt, yeriaPubPem, 7);
             expect(claims.sub).toBe('42');
             expect(claims.aud).toBe('7');
             expect(claims.iss).toBe('yeria');
             expect(claims.kid).toBe('key_test');
         });
 
-        it('accepts when expectedServiceId omitted', () => {
+        it('accepts when expectedAudience omitted', () => {
             const jwt = makeJwt({
                 sub: '42',
                 aud: 'yeria-admin',
                 iss: 'yeria',
                 exp: nowSec() + 600,
             });
-            const claims = YeriaApp.verifyUserToken(jwt, yeriaPubPem);
+            const claims = YeriaApp.verifyYeriaToken(jwt, yeriaPubPem);
             expect(claims.aud).toBe('yeria-admin');
         });
 
@@ -244,7 +321,7 @@ describe('YeriaApp - Security Tests', () => {
                 iss: 'yeria',
                 exp: nowSec() + 600,
             });
-            expect(() => YeriaApp.verifyUserToken(jwt, yeriaPubPem, 99)).toThrow();
+            expect(() => YeriaApp.verifyYeriaToken(jwt, yeriaPubPem, 99)).toThrow();
         });
 
         it('rejects wrong issuer', () => {
@@ -254,7 +331,7 @@ describe('YeriaApp - Security Tests', () => {
                 iss: 'not-yeria',
                 exp: nowSec() + 600,
             });
-            expect(() => YeriaApp.verifyUserToken(jwt, yeriaPubPem, 7)).toThrow();
+            expect(() => YeriaApp.verifyYeriaToken(jwt, yeriaPubPem, 7)).toThrow();
         });
 
         it('rejects expired token', () => {
@@ -264,7 +341,7 @@ describe('YeriaApp - Security Tests', () => {
                 iss: 'yeria',
                 exp: nowSec() - 10,
             });
-            expect(() => YeriaApp.verifyUserToken(jwt, yeriaPubPem, 7)).toThrow(ViewExpiredError);
+            expect(() => YeriaApp.verifyYeriaToken(jwt, yeriaPubPem, 7)).toThrow(ViewExpiredError);
         });
 
         it('rejects tampered payload', () => {
@@ -280,7 +357,7 @@ describe('YeriaApp - Security Tests', () => {
                 JSON.stringify({ sub: 'evil', aud: '7', iss: 'yeria', exp: nowSec() + 600 })
             ).toString('base64url');
             const tamperedJwt = `${parts[0]}.${tamperedPayload}.${parts[2]}`;
-            expect(() => YeriaApp.verifyUserToken(tamperedJwt, yeriaPubPem, 7)).toThrow();
+            expect(() => YeriaApp.verifyYeriaToken(tamperedJwt, yeriaPubPem, 7)).toThrow();
         });
 
         it('rejects signature signed by wrong key', () => {
@@ -293,7 +370,7 @@ describe('YeriaApp - Security Tests', () => {
                 { sub: '42', aud: '7', iss: 'yeria', exp: nowSec() + 600 },
                 { signerKey: other.privateKey as unknown as string },
             );
-            expect(() => YeriaApp.verifyUserToken(jwt, yeriaPubPem, 7)).toThrow();
+            expect(() => YeriaApp.verifyYeriaToken(jwt, yeriaPubPem, 7)).toThrow();
         });
 
         it('rejects non-RS256 alg', () => {
@@ -301,14 +378,14 @@ describe('YeriaApp - Security Tests', () => {
                 { sub: '42', aud: '7', iss: 'yeria', exp: nowSec() + 600 },
                 { alg: 'HS256' },
             );
-            expect(() => YeriaApp.verifyUserToken(jwt, yeriaPubPem, 7))
+            expect(() => YeriaApp.verifyYeriaToken(jwt, yeriaPubPem, 7))
                 .toThrow(SignatureVerificationError);
         });
 
         it('rejects malformed jwt (wrong number of parts)', () => {
-            expect(() => YeriaApp.verifyUserToken('only.two', yeriaPubPem, 7))
+            expect(() => YeriaApp.verifyYeriaToken('only.two', yeriaPubPem, 7))
                 .toThrow(SignatureVerificationError);
-            expect(() => YeriaApp.verifyUserToken('', yeriaPubPem, 7))
+            expect(() => YeriaApp.verifyYeriaToken('', yeriaPubPem, 7))
                 .toThrow(SignatureVerificationError);
         });
     });

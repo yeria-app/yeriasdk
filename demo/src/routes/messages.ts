@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { YeriaApp } from '@numerum-tech/yeriasdk';
+import { YeriaApp, YeriaUI } from '@numerum-tech/yeriasdk';
 import { DEMO_KEYS } from '../security/demo-keys';
 
 const router = Router();
@@ -13,8 +13,8 @@ const yeriaApp = new YeriaApp({
 
 // Comprehensive MessageView demonstration - ActionListView showing all message types
 router.get('/', (req: Request, res: Response) => {
-  const actionList = yeriaApp
-    .createActionListView('message-types', 'MessageView - Tous les Types de Sévérité')
+  const actionList = YeriaUI
+    .createActionListView('message-types', 'MessageView')
 
     // Message INFO
     .addAction('/api/messages/info', 'Message Info 💙', 'Message informatif avec notification importante et actions', 'ℹ️', false)
@@ -33,7 +33,7 @@ router.get('/', (req: Request, res: Response) => {
 
 // Message INFO
 router.get('/info', (req: Request, res: Response) => {
-  const infoMessage = yeriaApp
+  const infoMessage = YeriaUI
     .createMessageView('info-message', 'Message d\'Information')
     .setIntro('Notification importante')
     .setBody('Ceci est un message informatif. Il fournit des informations utiles à l\'utilisateur. Vous pouvez le fermer en cliquant sur ignorer ou continuer pour en savoir plus.')
@@ -53,7 +53,7 @@ router.get('/info', (req: Request, res: Response) => {
 
 // Message SUCCESS
 router.get('/success', (req: Request, res: Response) => {
-  const successMessage = yeriaApp
+  const successMessage = YeriaUI
     .createMessageView('success-message', 'Opération Réussie !')
     .setIntro('Confirmation de succès')
     .setBody('Votre paiement de 299,99 € a été traité avec succès. Un email de confirmation a été envoyé à votre adresse enregistrée.')
@@ -75,7 +75,7 @@ router.get('/success', (req: Request, res: Response) => {
 
 // Message WARNING
 router.get('/warning', (req: Request, res: Response) => {
-  const warningMessage = yeriaApp
+  const warningMessage = YeriaUI
     .createMessageView('warning-message', 'Attention : Stockage Presque Plein')
     .setIntro('Avertissement : Espace Faible')
     .setBody('Votre stockage est utilisé à 92%. Envisagez de mettre à niveau votre forfait ou de supprimer des fichiers inutiles pour libérer de l\'espace et éviter toute interruption de service.')
@@ -97,7 +97,7 @@ router.get('/warning', (req: Request, res: Response) => {
 
 // Message ERROR
 router.get('/error', (req: Request, res: Response) => {
-  const errorMessage = yeriaApp
+  const errorMessage = YeriaUI
     .createMessageView('error-message', 'Erreur de Connexion')
     .setIntro('Impossible de se connecter')
     .setBody('Nous n\'avons pas pu nous connecter au serveur. Veuillez vérifier votre connexion Internet et réessayer. Si le problème persiste, contactez le support.')

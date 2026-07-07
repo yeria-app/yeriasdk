@@ -17,46 +17,63 @@ except ImportError:
     MARKDOWN_AVAILABLE = False
 
 try:
-    from bs4 import BeautifulSoup
-    BEAUTIFULSOUP_AVAILABLE = True
+    import bleach
+    BLEACH_AVAILABLE = True
 except ImportError:
-    BEAUTIFULSOUP_AVAILABLE = False
+    BLEACH_AVAILABLE = False
+
+# Tags the renderer accepts (kept in sync with the JS SDK sanitizer).
+_ALLOWED_TAGS = [
+    "p", "br", "strong", "em", "u", "i", "b",
+    "h1", "h2", "h3", "h4", "h5", "h6",
+    "ul", "ol", "li",
+    "a", "blockquote", "code", "pre",
+    "table", "thead", "tbody", "tr", "th", "td",
+    "hr", "div", "span",
+]
+_ALLOWED_PROTOCOLS = ["http", "https", "mailto"]
 
 
 def _sanitize_html(html_content: str) -> str:
-    """Sanitize HTML using BeautifulSoup to prevent XSS attacks"""
-    if not BEAUTIFULSOUP_AVAILABLE:
-        # Fallback: basic HTML escaping
+    """Sanitize rendered-markdown HTML, keeping only the allowed tags.
+
+    Uses ``bleach`` (a declared dependency). Disallowed tags are stripped but
+    their text is kept, and ``<a>`` hrefs are limited to http/https/mailto —
+    the same policy the JS SDK applies, so the wire output is identical
+    (allowed tags pass through unescaped, whitespace preserved). The escape
+    fallback only runs if bleach is somehow unavailable; escaping is safe (no
+    XSS) though it would render tags as literal text.
+    """
+    if not BLEACH_AVAILABLE:
         import html as html_module
         return html_module.escape(html_content)
 
-    soup = BeautifulSoup(html_content, "html.parser")
-
-    # Allowed tags
-    allowed_tags = [
-        "p", "br", "strong", "em", "u", "i", "b",
-        "h1", "h2", "h3", "h4", "h5", "h6",
-        "ul", "ol", "li",
-        "a", "blockquote", "code", "pre",
-        "table", "thead", "tbody", "tr", "th", "td",
-        "hr", "div", "span"
-    ]
-
-    # Remove all tags not in allowed list
-    for tag in soup.find_all():
-        if tag.name not in allowed_tags:
-            tag.unwrap()
-        elif tag.name == "a":
-            # Only allow http, https, mailto
-            href = tag.get("href", "")
-            if href and not any(href.startswith(scheme) for scheme in ["http://", "https://", "mailto:"]):
-                tag.unwrap()
-
-    return str(soup)
+    return bleach.clean(
+        html_content,
+        tags=_ALLOWED_TAGS,
+        attributes={"a": ["href"]},
+        protocols=_ALLOWED_PROTOCOLS,
+        strip=True,
+    )
 
 
 class ReaderView(BaseView):
-    """View for displaying rich content with various elements"""
+    """Builds a Reader SGUI view — a scrollable rich-content document.
+
+    Content elements are appended in order via ``add_paragraph``,
+    ``add_subtitle``, ``add_image``, ``add_markdown``, ``add_list_field``,
+    ``add_link``, ``add_table``, ``add_code_block``, ``add_quote``,
+    ``add_separator`` and ``add_custom_element``.
+
+    Extends ``BaseView``; instantiated by the YeriaApp/YeriaUI factory,
+    populated with these builders, then serialized to a JSON view description
+    and signed into a v3 envelope by ``serve()``.
+    """
+    @classmethod
+    def from_json(cls, json_view):
+        """Rehydrate a Reader view from a wire JSON payload."""
+        return cls.from_json_as('Reader', json_view)
+
 
     def __init__(self, view_id: str, view_title: str, process_id: Optional[str] = None):
         super().__init__(

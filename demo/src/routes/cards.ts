@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { YeriaApp } from '@numerum-tech/yeriasdk';
+import { YeriaApp, YeriaUI } from '@numerum-tech/yeriasdk';
 import { DEMO_KEYS } from '../security/demo-keys';
 
 const router = Router();
@@ -14,11 +14,11 @@ const yeriaApp = new YeriaApp({
 
 // Comprehensive CardView demonstration
 router.get('/', (req: Request, res: Response) => {
-  const card = yeriaApp
-    .createCardView('comprehensive-card', 'Démo CardView Complet')
+  const card = YeriaUI
+    .createCardView('comprehensive-card', 'CardView')
     .setSubtitle('Démonstration de toutes les fonctionnalités CardView')
     .setDescription('Cette carte présente toutes les fonctionnalités disponibles du composant CardView : image, badge, statistiques, sections, actions avec variantes et métadonnées personnalisées.')
-    .setImage('https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=600', 'Image de démonstration du produit')
+    .setImage('img/card-product.png', 'Image de démonstration du produit')
     .setBadge('Premium')
 
     // Statistiques

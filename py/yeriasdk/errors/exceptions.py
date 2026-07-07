@@ -41,6 +41,7 @@ ERROR_CODES = {
     "MARKDOWN_PARSE_ERROR": "JSON_6001",
     "URL_PARSE_ERROR": "JSON_6002",
     "FILE_FORMAT_ERROR": "JSON_6003",
+    "PLATFORM_UNREACHABLE": "JSON_6005",
     # Map-specific errors (7xxx)
     "LAYER_NOT_FOUND": "JSON_7001",
     "LAYER_TYPE_MISMATCH": "JSON_7002",
@@ -356,6 +357,52 @@ class ExternalError(YeriaAppError):
         )
         self.name = "ExternalError"
         self.library = library
+        self.cause = cause
+
+
+class YeriaPlatformUnreachableError(YeriaAppError):
+    """The SDK could not reach the Yeria platform to resolve a signing key.
+
+    This is a TRANSPORT failure (network down, timeout, 5xx, or a non-JSON
+    error page such as a gateway 503), NOT a statement about the key itself.
+
+    Deliberately distinct from a key being expired/unknown: those mean the
+    inbound token must be rejected (401). This means no trust decision could
+    be made at all — the caller should surface a 503 and let the client
+    retry, never a 401. The name says "Yeria platform" (not the local key
+    store) so it is unambiguous which side is down.
+    """
+
+    def __init__(
+        self,
+        kid: str,
+        url: str,
+        reason: str,  # 'network' | 'http_error' | 'malformed_response'
+        status_code: Optional[int] = None,
+        cause: Optional[Exception] = None,
+    ):
+        status_part = f" HTTP {status_code}" if status_code else ""
+        super().__init__(
+            ERROR_CODES["PLATFORM_UNREACHABLE"],
+            (
+                f"Yeria platform unreachable while resolving key '{kid}' "
+                f"({reason}{status_part}). Could not verify the token — this "
+                f"is a transport failure reaching Yeria, not a rejection of "
+                f"the key."
+            ),
+            {
+                "kid": kid,
+                "url": url,
+                "reason": reason,
+                "status_code": status_code,
+                "cause": str(cause) if cause else None,
+            },
+        )
+        self.name = "YeriaPlatformUnreachableError"
+        self.kid = kid
+        self.url = url
+        self.reason = reason
+        self.status_code = status_code
         self.cause = cause
 
 

@@ -3,14 +3,26 @@ import { ActionConfig } from '../../types';
 import { MissingRequiredParameterError } from '../../errors';
 
 /**
- * Classe de base pour les vues d'actions (ActionList et ActionGrid)
- * Factoriser le code commun entre ActionListView et ActionGridView
+ * Abstract subclass of BaseView shared by the "action" family of views
+ * (ActionListView, ActionGridView, IconGridView).
+ *
+ * Factors out the action/item handling common to those views: adding,
+ * updating, removing, querying, sorting and enabling/disabling the list of
+ * actions that each concrete view renders. Subclasses implement
+ * syncActionsToContent() to project the shared actions array into their own
+ * content shape.
+ *
+ * This class is ABSTRACT and is never instantiated directly; use one of the
+ * concrete action views instead.
+ *
+ * Base class for the action views (ActionList and ActionGrid)
+ * Factors out the code common to ActionListView and ActionGridView
  */
 export abstract class BaseActionView extends BaseView {
     protected actions: ActionConfig[] = [];
 
     /**
-     * Ajoute une action
+     * Adds an action
      */
     addAction(
         code: string,
@@ -38,7 +50,7 @@ export abstract class BaseActionView extends BaseView {
     }
 
     /**
-     * Ajoute plusieurs actions en une fois
+     * Adds several actions at once
      */
     addActions(actions: Array<{
         code: string;
@@ -62,7 +74,7 @@ export abstract class BaseActionView extends BaseView {
     }
 
     /**
-     * Supprime une action par son code
+     * Removes an action by its code
      */
     removeAction(actionCode: string): boolean {
         const index = this.actions.findIndex(action => action.code === actionCode);
@@ -76,7 +88,7 @@ export abstract class BaseActionView extends BaseView {
     }
 
     /**
-     * Met à jour une action existante
+     * Updates an existing action
      */
     updateAction(actionCode: string, updates: Partial<ActionConfig>): boolean {
         const action = this.actions.find(a => a.code === actionCode);
@@ -90,42 +102,42 @@ export abstract class BaseActionView extends BaseView {
     }
 
     /**
-     * Obtient une action par son code
+     * Gets an action by its code
      */
     getAction(actionCode: string): ActionConfig | undefined {
         return this.actions.find(action => action.code === actionCode);
     }
 
     /**
-     * Obtient toutes les actions
+     * Gets all actions
      */
     getActions(): ActionConfig[] {
         return [...this.actions];
     }
 
     /**
-     * Obtient les actions actives (non désactivées)
+     * Gets the active actions (not disabled)
      */
     getActiveActions(): ActionConfig[] {
         return this.actions.filter(action => !action.disabled);
     }
 
     /**
-     * Obtient le nombre d'actions
+     * Gets the number of actions
      */
     getActionCount(): number {
         return this.actions.length;
     }
 
     /**
-     * Vérifie si une action existe
+     * Checks whether an action exists
      */
     hasAction(actionCode: string): boolean {
         return this.actions.some(action => action.code === actionCode);
     }
 
     /**
-     * Vide toutes les actions
+     * Clears all actions
      */
     clearActions(): void {
         this.actions = [];
@@ -138,14 +150,14 @@ export abstract class BaseActionView extends BaseView {
     protected abstract syncActionsToContent(): void;
 
     /**
-     * Filtre les actions selon un critère
+     * Filters the actions by a predicate
      */
     filterActions(predicate: (action: ActionConfig) => boolean): ActionConfig[] {
         return this.actions.filter(predicate);
     }
 
     /**
-     * Trie les actions selon un critère personnalisé
+     * Sorts the actions by a custom comparator
      */
     sortActions(compareFn: (a: ActionConfig, b: ActionConfig) => number): this {
         this.actions.sort(compareFn);
@@ -154,7 +166,7 @@ export abstract class BaseActionView extends BaseView {
     }
 
     /**
-     * Trie les actions par titre (ordre alphab étique)
+     * Sorts the actions by title (alphabetical order)
      */
     sortByTitle(ascending: boolean = true): this {
         return this.sortActions((a, b) => {
@@ -164,7 +176,7 @@ export abstract class BaseActionView extends BaseView {
     }
 
     /**
-     * Désactive toutes les actions
+     * Disables all actions
      */
     disableAllActions(): this {
         this.actions.forEach(action => {
@@ -174,7 +186,7 @@ export abstract class BaseActionView extends BaseView {
     }
 
     /**
-     * Active toutes les actions
+     * Enables all actions
      */
     enableAllActions(): this {
         this.actions.forEach(action => {

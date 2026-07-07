@@ -25,7 +25,23 @@ export interface FormContent {
     fields: Array<FormFieldParams & { fieldType: string; fieldId: string; fieldLabel: string }>;
 }
 
+/**
+ * Builds a Form SGUI view — an interactive data-entry form.
+ *
+ * Fields are appended via `addField` and the typed helpers (`addTextField`,
+ * `addEmailField`, `addSelectField`, `addPhotoField`, `addGPSField`, ...);
+ * `submitButton`/`updateButton`/`deleteButton` define the submit action, and
+ * `injectData`/`setFieldValue` pre-fill existing fields.
+ *
+ * Extends {@link BaseView}; instantiated by the YeriaApp/YeriaUI factory,
+ * populated with these builders, then serialized to a JSON view description and
+ * signed into a v3 envelope by `serve()`.
+ */
 export class FormView extends BaseView {
+
+    static fromJson(json: Record<string, unknown>): FormView {
+        return FormView.fromJsonAs(FormView, 'Form', json);
+    }
     private fieldValidations: Map<string, FieldValidation> = new Map();
 
     constructor(formId: string, title: string, processId?: string) {
@@ -48,24 +64,16 @@ export class FormView extends BaseView {
     }
 
     /**
-     * Définit l'introduction du formulaire
+     * Sets the form introduction (like ActionList/ActionGrid/etc.)
      */
     setIntro(intro: string): this {
         return this.setIntroText('intro', intro);
     }
 
     /**
-     * Définit la note du formulaire
-     * @deprecated Use setIntro() instead. This method is kept for backward compatibility.
-     */
-    setNote(note: string): this {
-        return this.setIntro(note);
-    }
-
-    /**
-     * Méthode helper pour associer ce formulaire à un processus
-     * @param processId - Identifiant du processus
-     * @param options - Options du processus (nom, étapes, etc.)
+     * Helper method to associate this form with a process
+     * @param processId - Process identifier
+     * @param options - Process options (name, steps, etc.)
      */
     belongsToProcess(
         processId: string,
@@ -83,7 +91,7 @@ export class FormView extends BaseView {
     }
 
     /**
-     * Ajoute un champ avec validation
+     * Adds a field with validation
      */
     addField(
         fieldType: string,
@@ -95,7 +103,7 @@ export class FormView extends BaseView {
             throw new MissingRequiredParameterError('fieldId, fieldLabel, and fieldType');
         }
 
-        // Validation du champ
+        // Field validation
         const validation = FieldValidator.validateField(fieldType, fieldId, fieldLabel, params);
         if (!validation.isValid) {
             const errorMessages = validation.errors.map(e => e.message);
@@ -105,7 +113,7 @@ export class FormView extends BaseView {
         const field = { fieldType, fieldId, fieldLabel, ...params };
         (this.content as FormContent).fields.push(field);
 
-        // Stocker la validation pour ce champ
+        // Store the validation for this field
         if (params) {
             this.fieldValidations.set(fieldId, params);
         }
@@ -146,7 +154,7 @@ export class FormView extends BaseView {
     }
 
     /**
-     * Méthodes de commodité pour différents types de champs
+     * Convenience methods for different field types
      */
     addTextField(fieldId: string, fieldLabel: string, isRequired: boolean = false, maxLength?: number): this {
         return this.addField('text', fieldId, fieldLabel, {
@@ -220,12 +228,21 @@ export class FormView extends BaseView {
         });
     }
 
+    /**
+     * @param config.altitude    include altitude in the captured value.
+     * @param config.maxAccuracy the coarsest fix the provider accepts, in
+     *   METRES (i.e. the minimum required precision). The mobile app keeps
+     *   searching until `position.accuracy <= maxAccuracy`, and the captured
+     *   accuracy travels back in the submitted value. Omit for the app default.
+     * @param config.precision   legacy boolean high-accuracy flag — superseded
+     *   by `maxAccuracy`; kept for backward compatibility.
+     */
     addGPSField(
         fieldId: string,
         fieldLabel: string,
         isRequired: boolean = false,
         liveData: boolean = false,
-        config: { altitude?: boolean; precision?: boolean } = {}
+        config: { altitude?: boolean; maxAccuracy?: number; precision?: boolean } = {}
     ): this {
         return this.addField('gps', fieldId, fieldLabel, {
             required: isRequired,
@@ -288,15 +305,15 @@ export class FormView extends BaseView {
     }
 
     /**
-     * Injecte des données dans les champs existants du formulaire
-     * Gère automatiquement les champs avec options (select, radio) en utilisant "selected"
-     * @param data - Objet clé-valeur où clé = fieldId
+     * Injects data into the form's existing fields
+     * Automatically handles fields with options (select, radio) using "selected"
+     * @param data - Key-value object where key = fieldId
      * @returns Result with errors for fields not found
      * @example
      * const result = form.injectData({
      *   name: 'John Doe',
      *   email: 'john@example.com',
-     *   country: 'FR'  // Pour select: met selected: true sur l'option 'FR'
+     *   country: 'FR'  // For select: sets selected: true on the 'FR' option
      * });
      * if (result.isErr()) {
      *   console.warn('Some fields not found:', result.error);
@@ -312,16 +329,16 @@ export class FormView extends BaseView {
                 return;
             }
 
-            // Détection automatique: champs avec options (select, radio, checkbox avec options)
+            // Automatic detection: fields with options (select, radio, checkbox with options)
             if (field.options && field.fieldType === 'select') {
-                // Pour select: marquer l'option correspondante comme selected
+                // For select: mark the matching option as selected
                 const updatedOptions = field.options.map(opt => ({
                     ...opt,
                     selected: opt.value === value
                 }));
                 this.updateField(fieldId, { options: updatedOptions as any });
             }
-            // Radio: une seule valeur
+            // Radio: a single value
             else if (field.options && field.fieldType === 'radio') {
                 const updatedOptions = field.options.map(opt => ({
                     ...opt,
@@ -329,7 +346,7 @@ export class FormView extends BaseView {
                 }));
                 this.updateField(fieldId, { options: updatedOptions as any });
             }
-            // Checkbox avec options: value est un array (multi-sélection)
+            // Checkbox with options: value is an array (multi-select)
             else if (field.options && field.fieldType === 'checkbox') {
                 const selectedValues = Array.isArray(value) ? value : [value];
                 const updatedOptions = field.options.map(opt => ({
@@ -338,7 +355,7 @@ export class FormView extends BaseView {
                 }));
                 this.updateField(fieldId, { options: updatedOptions as any });
             }
-            // Checkbox simple (true/false) ou tous les autres champs: utiliser value
+            // Simple checkbox (true/false) or all other fields: use value
             else {
                 this.updateField(fieldId, { value: value as any });
             }
@@ -351,9 +368,9 @@ export class FormView extends BaseView {
     }
 
     /**
-     * Définit la valeur d'un champ spécifique
-     * @param fieldId - ID du champ
-     * @param value - Valeur à injecter
+     * Sets the value of a specific field
+     * @param fieldId - Field ID
+     * @param value - Value to inject
      * @example
      * form.setFieldValue('name', 'John Doe')
      */
@@ -368,7 +385,7 @@ export class FormView extends BaseView {
     }
 
     /**
-     * Valide les données du formulaire
+     * Validates the form data
      * Note: This is for SDK internal validation. Services using this SDK should
      * perform their own data validation before populating views.
      */
@@ -377,14 +394,14 @@ export class FormView extends BaseView {
     }
 
     /**
-     * Obtient un champ par son ID
+     * Gets a field by its ID
      */
     getField(fieldId: string): (FormFieldParams & { fieldType: string; fieldId: string; fieldLabel: string }) | undefined {
         return (this.content as FormContent).fields.find(field => field.fieldId === fieldId);
     }
 
     /**
-     * Supprime un champ par son ID
+     * Removes a field by its ID
      * @returns Result with success or error message
      */
     removeField(fieldId: string): Result<void, string> {
@@ -401,7 +418,7 @@ export class FormView extends BaseView {
     }
 
     /**
-     * Met à jour un champ existant
+     * Updates an existing field
      * @returns Result with success or error message
      */
     updateField(fieldId: string, updates: Partial<FormFieldParams>): Result<void, string> {
@@ -412,7 +429,7 @@ export class FormView extends BaseView {
 
         Object.assign(field, updates);
 
-        // Mettre à jour la validation
+        // Update the validation
         if (this.fieldValidations.has(fieldId)) {
             const existingValidation = this.fieldValidations.get(fieldId)!;
             this.fieldValidations.set(fieldId, { ...existingValidation, ...updates });
@@ -422,14 +439,14 @@ export class FormView extends BaseView {
     }
 
     /**
-     * Obtient tous les champs
+     * Gets all fields
      */
     getFields(): Array<FormFieldParams & { fieldType: string; fieldId: string; fieldLabel: string }> {
         return [...(this.content as FormContent).fields];
     }
 
     /**
-     * Obtient le nombre de champs
+     * Gets the field count
      * @param excludeSeparators - If true, excludes separator fields from count (default: false)
      */
     getFieldCount(excludeSeparators: boolean = false): number {
@@ -440,14 +457,14 @@ export class FormView extends BaseView {
     }
 
     /**
-     * Vérifie si le formulaire a des champs requis
+     * Checks whether the form has required fields
      */
     hasRequiredFields(): boolean {
         return (this.content as FormContent).fields.some(field => field.required);
     }
 
     /**
-     * Obtient les champs requis
+     * Gets the required fields
      */
     getRequiredFields(): string[] {
         return (this.content as FormContent).fields

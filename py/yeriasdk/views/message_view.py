@@ -13,7 +13,23 @@ MessageSeverity = Literal["info", "success", "warning", "error"]
 
 
 class MessageView(BaseView):
-    """View for displaying messages with actions"""
+    """Builds a Message SGUI view — a titled notice/dialog with a severity and
+    up to two actions.
+
+    ``set_body`` / ``set_intro`` / ``set_severity`` set the content and tone;
+    ``set_primary_action`` and ``set_secondary_action`` (aliased by
+    ``submit_button``) define the confirm/cancel buttons, and
+    ``set_dismissible`` controls whether it can be closed without acting.
+
+    Extends ``BaseView``; instantiated by the YeriaApp/YeriaUI factory,
+    populated with these builders, then serialized to a JSON view description
+    and signed into a v3 envelope by ``serve()``.
+    """
+    @classmethod
+    def from_json(cls, json_view):
+        """Rehydrate a Message view from a wire JSON payload."""
+        return cls.from_json_as('Message', json_view)
+
 
     def __init__(self, view_id: str, title: str, process_id: Optional[str] = None):
         super().__init__(

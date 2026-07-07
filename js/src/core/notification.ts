@@ -1,6 +1,13 @@
 import { NotificationMessage, NotificationPayload } from '../types';
 import { MissingRequiredParameterError } from '../errors';
 
+/**
+ * Value object describing a notification to send to a specific user.
+ *
+ * Carries the target userId plus the message (title, body, optional link) and
+ * serializes via `toJSON()` to the payload the platform signs and sends.
+ * Constructed by callers; consumed by YeriaSigner.signNotification.
+ */
 export class Notification {
     private userId: string;
     private message: NotificationMessage;

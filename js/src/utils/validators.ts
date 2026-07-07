@@ -109,7 +109,7 @@ export class FieldValidator {
         const errors: ValidationErrorType[] = [];
         const warnings: ValidationErrorType[] = [];
 
-        // Validation de base
+        // Basic validation
         if (!fieldId || fieldId.trim() === '') {
             errors.push(createValidationError('Field ID is required', fieldId));
         }
@@ -132,9 +132,9 @@ export class FieldValidator {
             };
         }
 
-        // Validation des paramètres
+        // Parameter validation
         if (params) {
-            // Validation des longueurs
+            // Length validation
             if (params.minLength !== undefined && params.minLength < 0) {
                 errors.push(createValidationError('minLength must be non-negative', fieldId));
             }
@@ -148,30 +148,30 @@ export class FieldValidator {
                 errors.push(createValidationError('minLength cannot be greater than maxLength', fieldId));
             }
 
-            // Validation des valeurs numériques
+            // Numeric value validation
             if (params.min !== undefined && params.max !== undefined &&
                 params.min > params.max) {
                 errors.push(createValidationError('min value cannot be greater than max value', fieldId));
             }
 
-            // Validation des options pour les champs de sélection
+            // Option validation for select fields
             if (params.options && (!Array.isArray(params.options) || params.options.length === 0)) {
                 errors.push(createValidationError('Options must be a non-empty array for select fields', fieldId));
             }
 
-            // Validation des types MIME
+            // MIME type validation
             if (params.accept && (!Array.isArray(params.accept) || params.accept.length === 0)) {
                 errors.push(createValidationError('Accept must be a non-empty array for file fields', fieldId));
             }
 
-            // Validation des dépendances
+            // Dependency validation
             if (params.dependencies && (!Array.isArray(params.dependencies) ||
                 params.dependencies.some(dep => !dep || dep.trim() === ''))) {
                 errors.push(createValidationError('Dependencies must be a non-empty array of valid field IDs', fieldId));
             }
         }
 
-        // Validation spécifique par type de champ
+        // Field-type-specific validation
         switch (fieldType) {
             case 'email':
                 if (params?.value && !DataSanitizer.validateEmail(params.value)) {
@@ -342,13 +342,13 @@ export class FormValidator {
         for (const [fieldId, validation] of fieldValidations) {
             const value = formData[fieldId];
 
-            // Validation des champs requis
+            // Required field validation
             if (validation.required && (value === undefined || value === null || value === '')) {
                 errors.push(createValidationError(`Field '${fieldId}' is required`, fieldId));
                 continue;
             }
 
-            // Validation des dépendances
+            // Dependency validation
             if (validation.dependencies) {
                 for (const dependency of validation.dependencies) {
                     if (!formData[dependency]) {
@@ -361,17 +361,17 @@ export class FormValidator {
                 }
             }
 
-            // Validation conditionnelle
+            // Conditional validation
             if (validation.conditional && !validation.conditional(formData)) {
                 continue; // Skip validation if condition is not met
             }
 
-            // Validation des patterns
+            // Pattern validation
             if (validation.pattern && typeof value === 'string' && !validation.pattern.test(value)) {
                 errors.push(createValidationError(`Field '${fieldId}' does not match required pattern`, fieldId));
             }
 
-            // Validation des longueurs
+            // Length validation
             if (typeof value === 'string') {
                 if (validation.minLength !== undefined && value.length < validation.minLength) {
                     errors.push(createValidationError(
@@ -388,7 +388,7 @@ export class FormValidator {
                 }
             }
 
-            // Validation des valeurs numériques
+            // Numeric value validation
             if (typeof value === 'number') {
                 if (validation.min !== undefined && value < validation.min) {
                     errors.push(createValidationError(`Field '${fieldId}' must be at least ${validation.min}`, fieldId));
@@ -399,7 +399,7 @@ export class FormValidator {
                 }
             }
 
-            // Validation personnalisée
+            // Custom validation
             if (validation.customValidator) {
                 try {
                     const result = validation.customValidator(value);
@@ -426,7 +426,7 @@ export class FormValidator {
 }
 
 /**
- * Configuration pour la validation d'URL sécurisée
+ * Configuration for secure URL validation
  */
 export interface URLValidationConfig {
     allowedDomains?: string[];
@@ -436,8 +436,13 @@ export interface URLValidationConfig {
     maxUrlLength?: number;
 }
 
+export interface NavigationTargetValidationOptions {
+    allowRelative?: boolean;
+    allowViewId?: boolean;
+}
+
 /**
- * Valide une URL de soumission de manière sécurisée
+ * Securely validates a submission URL
  */
 export function validateSubmissionURL(url: string, config: URLValidationConfig = {}): ValidationResult {
     const errors: ValidationErrorType[] = [];
@@ -446,18 +451,18 @@ export function validateSubmissionURL(url: string, config: URLValidationConfig =
     try {
         const urlObj = new URL(url);
 
-        // 1. Validation de la longueur
+        // 1. Length validation
         if (config.maxUrlLength && url.length > config.maxUrlLength) {
             errors.push(createValidationError(`URL too long (max ${config.maxUrlLength} characters)`));
         }
 
-        // 2. Validation des protocoles autorisés
+        // 2. Allowed protocol validation
         const allowedProtocols = config.allowedProtocols || ['https:', 'http:'];
         if (!allowedProtocols.includes(urlObj.protocol)) {
             errors.push(createValidationError(`Protocol '${urlObj.protocol}' not allowed. Allowed: ${allowedProtocols.join(', ')}`));
         }
 
-        // 3. Blocage des IPs privées
+        // 3. Block private IPs
         if (config.blockPrivateIPs !== false) {
             const hostname = urlObj.hostname;
             const privateIPPatterns = [
@@ -475,14 +480,14 @@ export function validateSubmissionURL(url: string, config: URLValidationConfig =
             }
         }
 
-        // 4. Blocage de localhost
+        // 4. Block localhost
         if (config.blockLocalhost !== false) {
             if (urlObj.hostname === 'localhost' || urlObj.hostname === '127.0.0.1') {
                 errors.push(createValidationError('Localhost is not allowed'));
             }
         }
 
-        // 5. Validation des domaines autorisés
+        // 5. Allowed domain validation
         if (config.allowedDomains && config.allowedDomains.length > 0) {
             const hostname = urlObj.hostname.toLowerCase();
             const isAllowed = config.allowedDomains.some(domain => {
@@ -495,13 +500,13 @@ export function validateSubmissionURL(url: string, config: URLValidationConfig =
             }
         }
 
-        // 6. Validation des ports dangereux
+        // 6. Dangerous port validation
         const dangerousPorts = [21, 22, 23, 25, 53, 80, 110, 143, 993, 995, 3306, 5432, 6379, 27017];
         if (urlObj.port && dangerousPorts.includes(parseInt(urlObj.port))) {
             warnings.push(createValidationError(`Using potentially dangerous port: ${urlObj.port}`));
         }
 
-        // 7. Validation des caractères suspects
+        // 7. Suspicious character validation
         const suspiciousPatterns = [
             /\.\./, // Directory traversal
             /javascript:/i, // JavaScript protocol
@@ -526,11 +531,84 @@ export function validateSubmissionURL(url: string, config: URLValidationConfig =
 }
 
 /**
- * Configuration par défaut sécurisée
+ * Secure default configuration
  */
 export const DEFAULT_URL_CONFIG: URLValidationConfig = {
     allowedProtocols: ['https:'],
     blockPrivateIPs: true,
     blockLocalhost: true,
     maxUrlLength: 2048
-}; 
+};
+
+export function validateNavigationTarget(
+    target: string,
+    config: URLValidationConfig = {},
+    options: NavigationTargetValidationOptions = {}
+): ValidationResult {
+    const errors: ValidationErrorType[] = [];
+    const warnings: ValidationErrorType[] = [];
+    const trimmed = target.trim();
+
+    if (!trimmed) {
+        errors.push(createValidationError('Navigation target cannot be empty'));
+        return { isValid: false, errors };
+    }
+
+    const effectiveConfig = {
+        ...DEFAULT_URL_CONFIG,
+        ...config
+    };
+
+    if (effectiveConfig.maxUrlLength && trimmed.length > effectiveConfig.maxUrlLength) {
+        errors.push(createValidationError(`URL too long (max ${effectiveConfig.maxUrlLength} characters)`));
+    }
+
+    const suspiciousPatterns = [
+        /\.\./,
+        /javascript:/i,
+        /data:/i,
+        /vbscript:/i,
+        /file:/i,
+        /[\u0000-\u001F\u007F]/,
+    ];
+    if (suspiciousPatterns.some(pattern => pattern.test(trimmed))) {
+        errors.push(createValidationError('URL contains suspicious patterns'));
+    }
+
+    if (/\s/.test(trimmed)) {
+        errors.push(createValidationError('Navigation target cannot contain whitespace'));
+    }
+
+    const absoluteLike = /^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(trimmed);
+    if (absoluteLike) {
+        const absoluteValidation = validateSubmissionURL(trimmed, effectiveConfig);
+        return {
+            isValid: errors.length === 0 && absoluteValidation.isValid,
+            errors: [...errors, ...absoluteValidation.errors],
+            warnings: absoluteValidation.warnings ?? (warnings.length > 0 ? warnings : undefined)
+        };
+    }
+
+    if (trimmed.startsWith('//')) {
+        errors.push(createValidationError('Protocol-relative URLs are not allowed'));
+    }
+
+    const relativeAllowed = options.allowRelative !== false;
+    const viewIdAllowed = options.allowViewId === true;
+    const looksLikePath = trimmed.startsWith('/') || trimmed.startsWith('?') || trimmed.startsWith('#') || trimmed.includes('/');
+    const safeRelativeToken = /^[A-Za-z0-9._~\-]+$/.test(trimmed);
+    const isAccepted =
+        (relativeAllowed && looksLikePath) ||
+        (viewIdAllowed && safeRelativeToken) ||
+        (relativeAllowed && safeRelativeToken);
+
+    if (!isAccepted) {
+        errors.push(createValidationError('Navigation target must be an absolute https/http URL, a safe relative path, or an allowed viewId'));
+    }
+
+    return {
+        isValid: errors.length === 0,
+        errors,
+        warnings: warnings.length > 0 ? warnings : undefined
+    };
+}

@@ -3,6 +3,7 @@ export { FormView } from './core/form-view';
 export { ReaderView } from './core/reader-view';
 export { ActionListView } from './core/action-list-view';
 export { ActionGridView } from './core/action-grid-view';
+export { IconGridView } from './core/icon-grid-view';
 export { QRScanView } from './core/qr-scan-view';
 export { QRDisplayView } from './core/qr-display-view';
 export { MessageView } from './core/message-view';
@@ -12,21 +13,36 @@ export { TimelineView } from './core/timeline-view';
 export { MediaView } from './core/media-view';
 export { MapView } from './core/map-view';
 
-// Secure YeriaApp
+// ── Public surface: two symbols ──────────────────────────────────────────
+// `app` — the secret-holding half: sign / verify / notify / rotate. Construct
+//         once as a process-wide singleton.
 export { YeriaApp } from './core/yeria-app';
+// `YeriaUI` — keyless view factory: `YeriaUI.createFormView(...)`, `fromJson`.
+//         Import and use directly, no construction.
+export { YeriaUI } from './core/yeria-ui';
+
 export type {
     YeriaAppConfig,
+} from './core/yeria-app';
+export type {
     SignedEnvelope,
     DecodedPayload,
-    UserTokenClaims,
-    UserProfile,
+    YeriaTokenClaims,
+    UserDetails,
+    YeriaPublicKey,
     YeriaPublicKeyResolver,
-} from './core/yeria-app';
+} from './core/yeria-protocol';
+// Provider → mobile error contract (YeriaUI.error / app.serveError).
+export type {
+    ProviderErrorSpec,
+    ProviderFieldError,
+    ProviderErrorObject,
+    ProviderErrorBody,
+} from './core/provider-error';
 
-// Provider-side helper: resolves Yeria-issued JWT `kid` headers against
-// the public-key endpoint with TTL + negative caching.
-export { YeriaKeyStore } from './core/key-store';
-export type { YeriaKeyStoreOptions, KeyState, KeyLookup } from './core/key-store';
+// NOTE: the signer, envelope verifier, user-token verifier, Yeria HTTP client
+// (YeriaPlatform), and the kid key cache (YeriaPublicKeys) are INTERNAL — all
+// reachable through `app`. They are intentionally not exported.
 
 // Notifications
 export { Notification } from './core/notification';
@@ -72,6 +88,7 @@ export {
     ViewValidationError,
     MaxViewsExceededError,
     ExternalError,
+    YeriaPlatformUnreachableError,
     MarkdownParseError,
     NoProcessContextError,
     // Result type

@@ -8,8 +8,21 @@ import {
     createValidationError
 } from '../types';
 import { ViewValidationError, NoProcessContextError, InvalidParameterError } from '../errors';
-import { validateSubmissionURL, DEFAULT_URL_CONFIG } from '../utils/validators';
+import { validateNavigationTarget, DEFAULT_URL_CONFIG } from '../utils/validators';
 
+/**
+ * Abstract base for every Yeria SGUI view (Form, Reader, Card, Map, ...).
+ *
+ * Holds the state common to all views: identity (id / type / processId),
+ * navigation (setNext / setPrev), metadata, and the serialization
+ * (build / toJSON) that produces the view's JSON description. Concrete views
+ * are created via the YeriaApp / YeriaUI factory methods, populated, then
+ * signed by their serialized output. Instances are mutable, per-request
+ * builders — not singletons.
+ *
+ * This class is ABSTRACT and is never instantiated directly; use a concrete
+ * view subclass instead.
+ */
 export abstract class BaseView {
     public readonly id: string;
     public readonly type: ViewType;
@@ -32,7 +45,7 @@ export abstract class BaseView {
     }
 
     /**
-     * Valide la vue avant de la servir
+     * Validates the view before serving it
      */
     protected validate(): ValidationResult {
         const errors: ReturnType<typeof createValidationError>[] = [];
@@ -50,7 +63,7 @@ export abstract class BaseView {
             errors.push(createValidationError('View content is required'));
         }
 
-        // Validation spécifique par type de vue
+        // View-type-specific validation
         switch (this.type) {
             case 'Form':
                 if (
@@ -71,12 +84,19 @@ export abstract class BaseView {
 
             case 'ActionList':
             case 'ActionGrid':
+            case 'IconGrid':
                 if (
                     !this.content ||
                     !Array.isArray((this.content as Record<string, unknown>)['actions']) ||
                     ((this.content as Record<string, unknown>)['actions'] as unknown[]).length === 0
                 ) {
                     errors.push(createValidationError('Action views must have at least one action'));
+                }
+                if (this.type === 'IconGrid') {
+                    const shape = (this.content as Record<string, unknown>)?.['shape'];
+                    if (shape !== undefined && shape !== 'circle' && shape !== 'square') {
+                        errors.push(createValidationError("IconGrid 'shape' must be 'circle' or 'square'"));
+                    }
                 }
                 break;
 
@@ -230,9 +250,11 @@ export abstract class BaseView {
     }
 
     /**
-     * Sert la vue avec validation
+     * Validates the view, then returns its UNSIGNED JSON description (the wire
+     * payload). This does NOT sign — signing is `app.serve(view)`, which calls
+     * this internally. Named `build()` to avoid colliding with that.
      */
-    serve(): Record<string, unknown> {
+    build(): Record<string, unknown> {
         const validation = this.validate();
 
         if (!validation.isValid) {
@@ -248,22 +270,22 @@ export abstract class BaseView {
             content: this.content,
         };
 
-        // Ajouter le contexte de processus si présent (mobile app needs this for URL construction)
+        // Add the process context if present (mobile app needs this for URL construction)
         if (this.processContext) {
             result['process'] = this.processContext;
         }
 
-        // Ajouter les métadonnées si présentes
+        // Add the metadata if present
         if (this.metadata) {
             result['metadata'] = this.metadata;
         }
 
-        // Ajouter l'état si présent
+        // Add the state if present
         if (Object.keys(this.state).length > 0) {
             result['state'] = this.state;
         }
 
-        // Ajouter la navigation si présente
+        // Add the navigation if present
         if (this.navigation) {
             result['nav'] = this.navigation;
         }
@@ -272,28 +294,81 @@ export abstract class BaseView {
     }
 
     /**
-     * Retourne la représentation JSON de la vue
+     * Returns the view's JSON description (delegates to build()).
+     * Returns the JSON representation of the view
      */
     toJSON(): Record<string, unknown> {
-        return this.serve();
+        return this.build();
     }
 
     /**
-     * Met à jour l'état de la vue
+     * Shared rehydration: reconstruct a typed view instance from a wire JSON
+     * payload (the output of `toJSON()`), bypassing the fluent constructor.
+     * Each concrete view exposes a thin `static fromJson(json)` that calls this
+     * with its own class + expected type; the type guard is the per-view check,
+     * and the reconstructed instance is run through `validate()` (the existing
+     * per-type rules) before it is returned.
+     *
+     * All serialisable state lives in `content` (no view overrides `serve()`),
+     * so restoring `content` + the common fields is faithful for re-serving.
+     * Builder-only helpers (e.g. FormView's field-validation map) are not
+     * restored — `serve()` does not use them.
+     */
+    static fromJsonAs<T extends BaseView>(
+        Ctor: { prototype: T },
+        expectedType: ViewType,
+        json: Record<string, unknown>,
+    ): T {
+        if (!json || typeof json !== 'object' || Array.isArray(json)) {
+            throw new InvalidParameterError('json', json, 'fromJson expects a plain object view payload');
+        }
+        if (typeof json['id'] !== 'string' || (json['id'] as string).trim() === '') {
+            throw new InvalidParameterError('id', json['id'], 'fromJson requires a non-empty string id');
+        }
+        if (json['type'] !== expectedType) {
+            throw new InvalidParameterError('type', json['type'], `expected view type "${expectedType}", got "${String(json['type'])}"`);
+        }
+        if (!('content' in json) || json['content'] === null || json['content'] === undefined) {
+            throw new InvalidParameterError('content', json['content'], 'fromJson requires content');
+        }
+
+        // Bypass the fluent constructor (like clone()) and restore fields.
+        const instance: any = Object.create(Ctor.prototype);
+        instance.id = json['id'];
+        instance.type = json['type'];
+        instance.content = json['content'];
+        instance.state = (json['state'] && typeof json['state'] === 'object') ? json['state'] : {};
+        instance.metadata = json['metadata'];
+        instance.navigation = (json['nav'] && typeof json['nav'] === 'object') ? json['nav'] : undefined;
+        instance.processContext = (json['process'] && typeof json['process'] === 'object') ? json['process'] : undefined;
+
+        const validation = (instance as BaseView).validateView();
+        if (!validation.isValid) {
+            throw new ViewValidationError(
+                (instance as BaseView).id,
+                (instance as BaseView).type,
+                validation.errors.map(e => e.message),
+            );
+        }
+        return instance as T;
+    }
+
+    /**
+     * Updates the view's state
      */
     setState(key: string, value: unknown): void {
         this.state[key] = value;
     }
 
     /**
-     * Obtient une valeur de l'état
+     * Gets a value from the state
      */
     getState(key: string): unknown {
         return this.state[key];
     }
 
     /**
-     * Clone la vue
+     * Clones the view
      * Uses structuredClone for efficient deep cloning when available, falls back to JSON serialization
      */
     clone(): this {
@@ -333,35 +408,35 @@ export abstract class BaseView {
     }
 
     /**
-     * Vérifie si la vue est valide
+     * Checks whether the view is valid
      */
     isValid(): boolean {
         return this.validate().isValid;
     }
 
     /**
-     * Valide la vue et retourne le résultat
+     * Validates the view and returns the result
      */
     validateView(): ValidationResult {
         return this.validate();
     }
 
     /**
-     * Obtient les erreurs de validation
+     * Gets the validation errors
      */
     getValidationErrors(): string[] {
         return this.validate().errors.map(e => e.message);
     }
 
     /**
-     * Obtient les avertissements de validation
+     * Gets the validation warnings
      */
     getValidationWarnings(): string[] {
         return (this.validate().warnings || []).map(e => e.message);
     }
 
     /**
-     * Met à jour les métadonnées
+     * Updates the metadata
      */
     updateMetadata(metadata: Partial<BaseViewConfig['metadata']>): void {
         if (this.metadata) {
@@ -372,7 +447,7 @@ export abstract class BaseView {
     }
 
     /**
-     * Obtient les métadonnées
+     * Gets the metadata
      */
     getMetadata(): BaseViewConfig['metadata'] {
         return this.metadata;
@@ -380,8 +455,8 @@ export abstract class BaseView {
 
     /**
      * Protected helper to set intro/note text with strict validation
-     * Child views can expose this as setIntro(), setNote(), etc.
-     * @param fieldName - Name of the content field to set (e.g., 'intro', 'note')
+     * Child views can expose this as setIntro(), etc.
+     * @param fieldName - Name of the content field to set (e.g., 'intro')
      * @param value - Text value to set
      * @throws InvalidParameterError if value is empty or null
      */
@@ -399,58 +474,66 @@ export abstract class BaseView {
         return this;
     }
 
+    protected assertNavigationTarget(
+        fieldName: string,
+        target: string,
+        options: { allowRelative?: boolean; allowViewId?: boolean } = {}
+    ): string {
+        const trimmed = target.trim();
+        const validation = validateNavigationTarget(trimmed, {
+            ...DEFAULT_URL_CONFIG,
+            blockLocalhost: false,
+            blockPrivateIPs: false
+        }, options);
+
+        if (!validation.isValid) {
+            const errorMessages = validation.errors.map(e => e.message).join('; ');
+            throw new InvalidParameterError(fieldName, target, `Invalid navigation target: ${errorMessages}`);
+        }
+
+        return trimmed;
+    }
+
     /**
-     * Définit la vue suivante (navigation)
+     * Sets the next-view navigation target (validated to block open redirects).
+     * Sets the next view (navigation)
      * Validates URL to prevent open redirects and malicious links
      */
     setNext(url: string): this {
-        // Validate URL for security
-        const validation = validateSubmissionURL(url, {
-            ...DEFAULT_URL_CONFIG,
-            blockLocalhost: false,  // Allow localhost for development
-            blockPrivateIPs: false   // Allow private IPs for development
+        const target = this.assertNavigationTarget('url', url, {
+            allowRelative: true,
+            allowViewId: true
         });
-
-        if (!validation.isValid) {
-            const errorMessages = validation.errors.map(e => e.message).join('; ');
-            throw new InvalidParameterError('url', url, `Invalid navigation URL: ${errorMessages}`);
-        }
 
         if (!this.navigation) {
             this.navigation = {};
         }
-        this.navigation.next = url;
+        this.navigation.next = target;
         return this;
     }
 
     /**
-     * Définit la vue précédente (navigation)
+     * Sets the previous-view navigation target (validated to block open redirects).
+     * Sets the previous view (navigation)
      * Validates URL to prevent open redirects and malicious links
      */
     setPrev(url: string): this {
-        // Validate URL for security
-        const validation = validateSubmissionURL(url, {
-            ...DEFAULT_URL_CONFIG,
-            blockLocalhost: false,  // Allow localhost for development
-            blockPrivateIPs: false   // Allow private IPs for development
+        const target = this.assertNavigationTarget('url', url, {
+            allowRelative: true,
+            allowViewId: true
         });
-
-        if (!validation.isValid) {
-            const errorMessages = validation.errors.map(e => e.message).join('; ');
-            throw new InvalidParameterError('url', url, `Invalid navigation URL: ${errorMessages}`);
-        }
 
         if (!this.navigation) {
             this.navigation = {};
         }
-        this.navigation.prev = url;
+        this.navigation.prev = target;
         return this;
     }
 
     /**
-     * Définit le contexte de processus pour cette vue
-     * @param processId - Identifiant unique du processus
-     * @param context - Contexte additionnel (étapes, nom, etc.)
+     * Sets the process context for this view
+     * @param processId - Unique process identifier
+     * @param context - Additional context (steps, name, etc.)
      */
     setProcess(processId: string, context?: Partial<Omit<ProcessContext, 'processId'>>): this {
         this.processContext = {
@@ -462,28 +545,28 @@ export abstract class BaseView {
     }
 
     /**
-     * Obtient le contexte de processus
+     * Gets the process context
      */
     getProcessContext(): ProcessContext | undefined {
         return this.processContext;
     }
 
     /**
-     * Obtient l'identifiant du processus (raccourci)
+     * Gets the process identifier (shortcut)
      */
     getProcessId(): string | undefined {
         return this.processContext?.processId;
     }
 
     /**
-     * Vérifie si cette vue fait partie d'un processus
+     * Checks whether this view is part of a process
      */
     hasProcess(): boolean {
         return this.processContext !== undefined;
     }
 
     /**
-     * Met à jour le contexte de processus
+     * Updates the process context
      */
     updateProcessContext(updates: Partial<ProcessContext>): this {
         if (!this.processContext) {
@@ -499,7 +582,7 @@ export abstract class BaseView {
     }
 
     /**
-     * Nettoie les ressources de la vue
+     * Cleans up the view's resources
      */
     destroy(): void {
         this.state = {};

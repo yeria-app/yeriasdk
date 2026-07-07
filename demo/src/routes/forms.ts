@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { YeriaApp } from '@numerum-tech/yeriasdk';
+import { YeriaApp, YeriaUI } from '@numerum-tech/yeriasdk';
 import { DEMO_KEYS } from '../security/demo-keys';
 
 const router = Router();
@@ -13,9 +13,9 @@ const yeriaApp = new YeriaApp({
 
 // Comprehensive form with all field types
 router.get('/', (req: Request, res: Response) => {
-  const form = yeriaApp
-    .createFormView('comprehensive-form', 'Formulaire complet - Tous les types de champs')
-    .setNote('Ce formulaire démontre tous les types de champs disponibles dans le SDK Yeria')
+  const form = YeriaUI
+    .createFormView('comprehensive-form', 'FormView')
+    .setIntro('Ce formulaire démontre tous les types de champs disponibles dans le SDK Yeria.')
 
     // Text fields
     .addTextField('username', 'Nom d\'utilisateur', true, 50)
@@ -112,7 +112,7 @@ router.post('/', (req: Request, res: Response) => {
 
   if (errors.length > 0) {
     // Return error MessageView
-    const errorMessage = yeriaApp
+    const errorMessage = YeriaUI
       .createMessageView('form-error', 'Erreur de validation du formulaire', 'error')
       .setBody(`Veuillez corriger les erreurs suivantes :\n\n${errors.map(e => `• ${e}`).join('\n')}`);
 
@@ -121,7 +121,7 @@ router.post('/', (req: Request, res: Response) => {
 
   // Success MessageView
   const recordId = `FORM-${Date.now()}`;
-  const successMessage = yeriaApp
+  const successMessage = YeriaUI
     .createMessageView('form-success', 'Formulaire soumis avec succès', 'success')
     .setBody(`Merci ${formData.username} !\n\nVotre formulaire a été soumis avec succès.\n\nDétails :\n• Email : ${formData.email}\n• Pays : ${formData.country}\n• ID d'enregistrement : ${recordId}\n\nDate : ${new Date().toISOString()}`);
 

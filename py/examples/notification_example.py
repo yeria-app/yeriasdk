@@ -5,7 +5,7 @@ Notification usage example for the YeriaApp SDK
 Run with: python examples/notification_example.py
 """
 
-from yeriasdk import YeriaApp, YeriaAppConfig
+from yeriasdk import YeriaApp, YeriaAppConfig, Notification
 
 
 def header(title: str) -> None:
@@ -15,10 +15,10 @@ def header(title: str) -> None:
 
 header("YeriaApp SDK – Notification Example")
 
-# 1. Initialize YeriaApp with platform URL
+# 1. Initialize YeriaApp with the Yeria platform base URL
 config = YeriaAppConfig(
     app_id="example-app",
-    platform_url="https://platform.yeria.com/api/notifications",  # Optional: can also pass per-call
+    base_url="https://yeria.app",  # notifications POST to {base_url}/api/v1/user/notifications
 )
 json_app = YeriaApp(config)
 
@@ -27,19 +27,16 @@ print("✅ YeriaApp ready for notifications")
 # 2. Create a basic notification
 header("Creating Notifications")
 
-welcome_notification = (
-    json_app.create_notification(
-        "user-123",
-        "Welcome!",
-        "Thank you for joining City-Mate. Get started by completing your profile.",
-    )
-    .set_link("/welcome")
-)
+welcome_notification = Notification(
+    "user-123",
+    "Welcome!",
+    "Thank you for joining Yeria. Get started by completing your profile.",
+).set_link("/welcome")
 
 print("✅ Created welcome notification")
 
 # 3. Create notification with link in constructor
-message_notification = json_app.create_notification(
+message_notification = Notification(
     "user-456",
     "New Message",
     "You have a new message from John Doe",
@@ -49,7 +46,7 @@ message_notification = json_app.create_notification(
 print("✅ Created message notification with link")
 
 # 4. Create notification without link
-reminder_notification = json_app.create_notification(
+reminder_notification = Notification(
     "user-789",
     "Reminder",
     "Don't forget to complete your profile to unlock all features",
@@ -71,18 +68,18 @@ print(
     },
 )
 
-# 6. Send notifications (commented out - requires actual platform endpoint)
+# 6. Send notifications (commented out - requires a reachable Yeria backend)
 header("Sending Notifications")
 
-# Uncomment to actually send (requires valid platform URL):
+# Uncomment to actually send (requires base_url configured above):
 """
 try:
     json_app.send_notification(welcome_notification)
     print("✅ Sent welcome notification")
-    
+
     json_app.send_notification(message_notification)
     print("✅ Sent message notification")
-    
+
     json_app.send_notification(reminder_notification)
     print("✅ Sent reminder notification")
 except Exception as error:
@@ -117,32 +114,10 @@ print(json.dumps(payload, indent=2))
 import requests
 
 response = requests.post(
-    'https://platform.yeria.com/api/notifications',
+    'https://yeria.app/api/v1/user/notifications',
     json=payload
 )
-
-if not response.ok:
-    raise Exception(f"Failed to send: {response.status_text}")
-"""
-
-# 8. Dynamic platform URL
-header("Dynamic Platform URL")
-
-config_no_url = YeriaAppConfig(app_id="example-app")
-json_app_no_url = YeriaApp(config_no_url)
-
-dynamic_notification = json_app_no_url.create_notification(
-    "user-999", "Test", "Testing dynamic URL"
-)
-
-# Override platform URL per call:
-"""
-json_app_no_url.send_notification(
-    dynamic_notification,
-    platform_url='https://staging.yeria.com/api/notifications'
-)
+response.raise_for_status()
 """
 
 print("\n✅ Notification examples completed\n")
-
-

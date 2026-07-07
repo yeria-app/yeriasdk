@@ -20,7 +20,7 @@ Un SDK TypeScript moderne et optimisé pour générer des interfaces JSON dynami
 - **Timelines** pour les historiques ou étapes
 - **Médias** audio/vidéo intégrés
 - **Cartes interactives** pour localiser des points clés
-- **Notifications** pour envoyer des messages signés aux utilisateurs via la plateforme City-Mate
+- **Notifications** pour envoyer des messages signés aux utilisateurs via la plateforme Yeria
 - **API fluide** grâce au chaînage des méthodes
 - **Validation robuste** avec règles personnalisables
 - **Logging structuré** pour le débogage
@@ -71,6 +71,25 @@ const formSimple = new FormView('user-registration', 'User Registration')
   .addEmailField('email', 'Email Address', true)
   .addPhoneField('phone', 'Phone Number', false)
   .submitButton('Register', 'POST');
+```
+
+### Vue JSON Statique
+
+```typescript
+import { YeriaApp } from '@numerum-tech/yeriasdk';
+
+const yeriaApp = new YeriaApp({ appId: 'my-app' });
+
+const envelope = yeriaApp.serveRawView({
+  id: 'home-static',
+  type: 'Reader',
+  content: {
+    title: 'Bienvenue',
+    body: [
+      { type: 'paragraph', text: 'Cette vue est servie depuis un bloc JSON.' }
+    ]
+  }
+});
 ```
 
 ### Injection de Données (Formulaires d'Édition)
@@ -408,19 +427,19 @@ console.log(storeMap.toJSON());
 
 ### Notifications
 
-Envoyer des notifications signées aux utilisateurs via la plateforme City-Mate :
+Envoyer des notifications signées aux utilisateurs via la plateforme Yeria
+(POST `{baseUrl}/api/v1/user/notifications`) :
 
 ```typescript
-import { YeriaApp } from '@numerum-tech/yeriasdk';
+import { YeriaApp, Notification } from '@numerum-tech/yeriasdk';
 
 const yeriaApp = new YeriaApp({
   appId: 'my-backend-service',
-  platformUrl: 'https://platform.yeria.com/api/notifications' // Optionnel: peut aussi être passé par appel
+  baseUrl: 'https://yeria.app'
 });
 
 // Créer et envoyer une notification
-const notification = yeriaApp
-  .createNotification('user-123', 'Bienvenue !', 'Merci d\'avoir rejoint City-Mate')
+const notification = new Notification('user-123', 'Bienvenue !', 'Merci d\'avoir rejoint Yeria')
   .setLink('/welcome');
 
 await yeriaApp.sendNotification(notification);

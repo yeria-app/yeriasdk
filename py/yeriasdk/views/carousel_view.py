@@ -11,7 +11,22 @@ from ..errors.exceptions import MissingRequiredParameterError, ElementNotFoundEr
 
 
 class CarouselView(BaseView):
-    """View for displaying carousel slides"""
+    """Builds a Carousel SGUI view — a sequence of spotlight slides for hero
+    banners or promotional decks.
+
+    ``add_slide`` (or ``create_slide`` + ``add_slide``) appends slides,
+    ``add_slide_action`` attaches action buttons to a slide, and
+    ``set_settings`` tunes autoplay, looping and indicator behaviour.
+
+    Extends ``BaseView``; instantiated by the YeriaApp/YeriaUI factory,
+    populated with these builders, then serialized to a JSON view description
+    and signed into a v3 envelope by ``serve()``.
+    """
+    @classmethod
+    def from_json(cls, json_view):
+        """Rehydrate a Carousel view from a wire JSON payload."""
+        return cls.from_json_as('Carousel', json_view)
+
 
     def __init__(self, view_id: str, title: str, process_id: Optional[str] = None):
         super().__init__(
@@ -133,7 +148,7 @@ class CarouselView(BaseView):
         image_alt: Optional[str] = None,
         badge: Optional[str] = None,
     ) -> CarouselSlide:
-        """Create a slide object"""
+        """Build a CarouselSlide object without adding it to the view"""
         slide = CarouselSlide(
             id=id.strip(),
             title=title.strip(),
@@ -170,7 +185,9 @@ class CarouselView(BaseView):
             "text": text.strip(),
             "method": method,
             "confirmMessage": confirm_message,
-            "href": href.strip() if href else None,
+            "href": self._assert_navigation_target(
+                "href", href, allow_relative=True, allow_view_id=False
+            ) if href else None,
             "icon": icon.strip() if icon else None,
             "variant": variant,
         }
@@ -186,4 +203,3 @@ class CarouselView(BaseView):
     def get_content(self):
         """Get the carousel content"""
         return self.content
-

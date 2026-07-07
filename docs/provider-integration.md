@@ -43,7 +43,7 @@ your backend.
 [Mobile] -- Bearer <serviceJWT> --> [Provider backend]
                                           |
                                           | 1. verifyUserTokenWithResolver
-                                          |    (resolver = YeriaKeyStore.getByKid)
+                                          |    (resolver = YeriaPublicKeys.getByKid)
                                           |
                                           | 2. cache miss? fetchUserProfile
                                           |    (signs envelope, POSTs to Yeria)
@@ -65,14 +65,22 @@ first hit per user, then never again — provider persists the profile by
 import express from 'express';
 import {
   YeriaApp,
-  YeriaKeyStore,
+  YeriaPublicKeys,
   SignatureVerificationError,
   ViewExpiredError,
 } from '@numerum-tech/yeriasdk';
 
-const keys = new YeriaKeyStore({ baseUrl: process.env.YERIA_BASE_URL! });
+const keys = new YeriaPublicKeys({ baseUrl: process.env.YERIA_BASE_URL! });
 const SERVICE_ID = Number(process.env.YERIA_SERVICE_ID!);
 const SERVICE_PRIVATE_KEY = process.env.SERVICE_ED25519_PRIVATE_KEY!;
+
+// One instance, reused to sign views (serve) and to fetch user profiles.
+// The public key is derived from the private key — no need to pass it.
+const yeria = new YeriaApp({
+  appId: process.env.YERIA_APP_ID!,
+  baseUrl: process.env.YERIA_BASE_URL!,
+  privateKey: SERVICE_PRIVATE_KEY,
+});
 
 // Provider's own middleware — NOT shipped by the SDK.
 async function requireYeriaUser(
@@ -121,11 +129,9 @@ app.get('/secure/me', async (req, res) => {
   // Cache miss → fetch from Yeria once, persist locally.
   let user = await db.users.findByYeriaSub(claims.sub);
   if (!user) {
-    const profile = await YeriaApp.fetchUserProfile({
-      baseUrl: process.env.YERIA_BASE_URL!,
+    const profile = await yeria.fetchUserProfile({
       serviceId: SERVICE_ID,
       userId: claims.sub,
-      privateKey: SERVICE_PRIVATE_KEY,
     });
     user = await db.users.insert({ yeria_sub: claims.sub, ...profile });
   }
@@ -138,23 +144,31 @@ app.get('/secure/me', async (req, res) => {
 
 | Helper | Inputs | What it does |
 |---|---|---|
-| `YeriaKeyStore` | `{baseUrl, ttlMs?, fetch?}` | TTL-cached lookup of Yeria public keys by `kid`. Negative caching for expired/unknown. |
+| `YeriaPublicKeys` | `{baseUrl, ttlMs?, fetch?}` | TTL-cached lookup of Yeria public keys by `kid`. Negative caching for expired/unknown. |
 | `keys.getByKid(kid)` | `kid` from JWT header | PEM if trusted, `null` if not. The SDK treats `null` as "reject the token". |
 | `keys.invalidate(kid)` | `kid` | Drops a single cache entry. Call after a verify failure to force a refetch on the retry. |
 | `YeriaApp.verifyUserTokenWithResolver` | `(jwt, resolver, expectedServiceId?)` | RS256 verify with kid-aware key lookup. Enforces `iss='yeria'`, optional `aud=<expectedServiceId>`, `exp > now`. |
-| `YeriaApp.fetchUserProfile` | `{baseUrl, serviceId, userId, privateKey, fetch?}` | Builds Ed25519-signed envelope, POSTs to Yeria, returns `{user_id, first_name, last_name, country_code}`. |
+| `yeria.fetchUserProfile` (instance) | `{serviceId, userId, fetch?}` — `baseUrl` + private key come from the instance config | Builds Ed25519-signed envelope, POSTs to Yeria, returns `{user_id, first_name, last_name, country_code, email}`. |
 
 ---
 
 ## Python
 
 ```python
-from yeriasdk import YeriaApp, YeriaKeyStore
+from yeriasdk import YeriaApp, YeriaAppConfig, YeriaPublicKeys
 from yeriasdk.errors.exceptions import SignatureVerificationError, ViewExpiredError
 
-keys = YeriaKeyStore(base_url=os.environ["YERIA_BASE_URL"])
+keys = YeriaPublicKeys(base_url=os.environ["YERIA_BASE_URL"])
 SERVICE_ID = int(os.environ["YERIA_SERVICE_ID"])
 SERVICE_PRIVATE_KEY = os.environ["SERVICE_ED25519_PRIVATE_KEY"]
+
+# One instance, reused to sign views (serve) and to fetch user profiles.
+# The public key is derived from the private key — no need to pass it.
+yeria = YeriaApp(YeriaAppConfig(
+    app_id=os.environ["YERIA_APP_ID"],
+    base_url=os.environ["YERIA_BASE_URL"],
+    private_key=SERVICE_PRIVATE_KEY,
+))
 
 # FastAPI dependency — written by the provider, NOT shipped by the SDK.
 from fastapi import Depends, Header, HTTPException
@@ -181,11 +195,9 @@ async def require_yeria_user(authorization: str = Header(default="")):
 async def me(claims = Depends(require_yeria_user)):
     user = db.users.find_by_yeria_sub(claims.sub)
     if user is None:
-        profile = YeriaApp.fetch_user_profile(
-            base_url=os.environ["YERIA_BASE_URL"],
+        profile = yeria.fetch_user_profile(
             service_id=SERVICE_ID,
             user_id=claims.sub,
-            private_key=SERVICE_PRIVATE_KEY,
         )
         user = db.users.insert(yeria_sub=claims.sub, **dataclasses.asdict(profile))
     return {"id": user.id, "first_name": user.first_name}
@@ -202,7 +214,7 @@ its TTL. When this happens:
    window. Tokens already minted under it still verify.
 2. After 5 min, the retired key transitions to `state: expired`. Yeria's
    `/public-keys/{kid}` endpoint no longer returns its PEM — only the
-   state. `YeriaKeyStore.getByKid` returns `null`. The SDK throws.
+   state. `YeriaPublicKeys.getByKid` returns `null`. The SDK throws.
 3. Tokens minted under the new key carry the new `kid` in their header.
    The keystore fetches the new PEM on first encounter, caches it.
 
@@ -230,6 +242,7 @@ CREATE TABLE users (
     first_name    TEXT,
     last_name     TEXT,
     country_code  CHAR(2),
+    email         TEXT,
     fetched_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
     -- your own provider-specific fields below
     kyc_status    TEXT,

@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { YeriaApp } from '@numerum-tech/yeriasdk';
+import { YeriaApp, YeriaUI } from '@numerum-tech/yeriasdk';
 import { DEMO_KEYS } from '../security/demo-keys';
 
 const router = Router();
@@ -13,8 +13,8 @@ const yeriaApp = new YeriaApp({
 
 // Comprehensive CarouselView demonstration with all features
 router.get('/', (req: Request, res: Response) => {
-  const carousel = yeriaApp
-    .createCarouselView('comprehensive-carousel', 'CarouselView - Démo Complète')
+  const carousel = YeriaUI
+    .createCarouselView('comprehensive-carousel', 'CarouselView')
     .setSubtitle('Démonstration de toutes les fonctionnalités du carrousel avec divers types de diapositives')
     .setSettings({
       autoplay: true,
@@ -28,7 +28,7 @@ router.get('/', (req: Request, res: Response) => {
       id: 'slide-tech',
       title: 'Innovation Technologique',
       description: 'Découvrez les dernières innovations dans le domaine de la technologie et du développement moderne',
-      image: { url: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=800', alt: 'Technologie' },
+      image: { url: 'img/carousel-innovation.png', alt: 'Technologie' },
       badge: 'Nouveau'
     })
 
@@ -37,7 +37,7 @@ router.get('/', (req: Request, res: Response) => {
       id: 'slide-dev',
       title: 'Développement Web',
       description: 'Construisez des applications web modernes avec les meilleurs outils et frameworks disponibles',
-      image: { url: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=800', alt: 'Développement' }
+      image: { url: 'img/carousel-web-dev.png', alt: 'Développement' }
     })
 
     // Diapositive 3 - Avec image, description et badge
@@ -45,7 +45,7 @@ router.get('/', (req: Request, res: Response) => {
       id: 'slide-analytics',
       title: 'Analytiques Avancées',
       description: 'Suivez vos performances et analysez vos données pour prendre de meilleures décisions',
-      image: { url: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800', alt: 'Analytiques' },
+      image: { url: 'img/carousel-analytics.png', alt: 'Analytiques' },
       badge: 'Populaire'
     })
 
@@ -54,7 +54,7 @@ router.get('/', (req: Request, res: Response) => {
       id: 'slide-product',
       title: 'MacBook Pro 16"',
       description: 'Le MacBook le plus puissant jamais créé. Puce M3 Pro, écran Retina XDR, autonomie exceptionnelle',
-      image: { url: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=800', alt: 'MacBook Pro' },
+      image: { url: 'img/carousel-macbook.png', alt: 'MacBook Pro' },
       badge: 'Bestseller'
     })
 
@@ -63,7 +63,7 @@ router.get('/', (req: Request, res: Response) => {
       id: 'slide-testimonial',
       title: 'Sarah Martin',
       description: '"Yeria SDK a complètement transformé notre processus de développement mobile. Nous livrons maintenant des fonctionnalités 3 fois plus rapidement qu\'avant."',
-      image: { url: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=800', alt: 'Sarah Martin' },
+      image: { url: 'img/carousel-sarah.png', alt: 'Sarah Martin' },
       badge: 'CTO, TechCorp'
     })
 
@@ -72,7 +72,7 @@ router.get('/', (req: Request, res: Response) => {
       id: 'slide-onboard',
       title: 'Prêt à Commencer ?',
       description: 'Créez votre première vue dynamique et découvrez la puissance du développement backend-driven',
-      image: { url: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800', alt: 'Commencer' },
+      image: { url: 'img/carousel-get-started.png', alt: 'Commencer' },
       badge: 'Guide'
     })
 
@@ -81,7 +81,7 @@ router.get('/', (req: Request, res: Response) => {
       id: 'slide-event',
       title: 'Webinaire Gratuit',
       description: 'Rejoignez-nous le 15 décembre pour un webinaire exclusif sur les meilleures pratiques Yeria',
-      image: { url: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800', alt: 'Webinaire' },
+      image: { url: 'img/carousel-webinar.png', alt: 'Webinaire' },
       badge: 'Gratuit'
     })
 
@@ -90,7 +90,7 @@ router.get('/', (req: Request, res: Response) => {
       id: 'slide-news',
       title: 'Version 3.0 Disponible',
       description: 'La nouvelle version majeure est sortie avec de nombreuses fonctionnalités attendues et améliorations',
-      image: { url: 'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=800', alt: 'Actualité' },
+      image: { url: 'img/carousel-release-v3.png', alt: 'Actualité' },
       badge: '🎉 Nouveau'
     });
 

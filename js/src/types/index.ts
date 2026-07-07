@@ -1,10 +1,11 @@
 import { z } from 'zod';
 
-// Types de base pour les vues
+// Base types for the views
 export type ViewType =
     | 'Reader'
     | 'ActionList'
     | 'ActionGrid'
+    | 'IconGrid'
     | 'Form'
     | 'QRScan'
     | 'QRDisplay'
@@ -16,13 +17,13 @@ export type ViewType =
     | 'Media'
     | 'Map';
 
-// Types pour les messages
+// Types for messages
 export type MessageType = 'error' | 'info' | 'warning' | 'success';
 
-// Types pour les méthodes HTTP
+// Types for HTTP methods
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
 
-// Types pour les notifications
+// Types for notifications
 export interface NotificationMessage {
     title: string;
     body: string;
@@ -42,33 +43,33 @@ export interface SecureNotificationResponse {
 }
 
 export interface NotificationConfig {
-    platformUrl?: string; // City-Mate platform endpoint URL
+    baseUrl?: string; // Yeria platform base URL
     timeout?: number; // HTTP request timeout in ms (default: 5000)
 }
 
-// Configuration de navigation pour les vues
+// Navigation configuration for the views
 export interface NavigationConfig {
-    next?: string;  // URL ou viewId de la vue suivante
-    prev?: string;  // URL ou viewId de la vue précédente
+    next?: string;  // URL or viewId of the next view
+    prev?: string;  // URL or viewId of the previous view
 }
 
-// Context de processus pour les workflows multi-étapes
+// Process context for multi-step workflows
 export interface ProcessContext {
-    processId: string;           // Identifiant unique du processus
-    processName?: string;        // Nom lisible du processus
-    currentStep?: number;        // Étape actuelle (1-based)
-    totalSteps?: number;         // Nombre total d'étapes
-    stepName?: string;           // Nom de l'étape actuelle
-    canGoBack?: boolean;         // Peut revenir en arrière
-    canSkip?: boolean;           // Peut sauter cette étape
-    metadata?: Record<string, unknown>;  // Métadonnées du processus
+    processId: string;           // Unique process identifier
+    processName?: string;        // Human-readable process name
+    currentStep?: number;        // Current step (1-based)
+    totalSteps?: number;         // Total number of steps
+    stepName?: string;           // Name of the current step
+    canGoBack?: boolean;         // Can go back
+    canSkip?: boolean;           // Can skip this step
+    metadata?: Record<string, unknown>;  // Process metadata
 }
 
-// Configuration de base pour toutes les vues
+// Base configuration for all views
 export interface BaseViewConfig {
     id: string;
     type: ViewType;
-    processId?: string;          // Identifiant de processus (optionnel)
+    processId?: string;          // Process identifier (optional)
     metadata?: {
         version: string;
         createdAt: Date;
@@ -77,7 +78,7 @@ export interface BaseViewConfig {
     };
 }
 
-// Configuration pour les champs de formulaire
+// Configuration for form fields
 export interface FieldValidation {
     required?: boolean;
     pattern?: RegExp;
@@ -86,7 +87,7 @@ export interface FieldValidation {
     minLength?: number;
     maxLength?: number;
     customValidator?: (value: unknown) => boolean | string;
-    dependencies?: string[]; // Champs requis si ce champ est rempli
+    dependencies?: string[]; // Fields required if this field is filled
     conditional?: (formData: Record<string, unknown>) => boolean;
 }
 
@@ -103,17 +104,18 @@ export interface FormFieldParams extends FieldValidation {
     maxDate?: string;      // For date fields: maximum date (YYYY-MM-DD)
 }
 
-// Configuration pour les actions
+// Configuration for actions
 export interface ActionConfig {
     code: string;
     title: string;
     desc?: string;
     thumbnail?: string;
+    badge?: string;          // small overlay text on IconGrid tiles (e.g. "3", "New")
     disabled?: boolean;
     metadata?: Record<string, unknown>;
 }
 
-// Configuration pour les éléments de contenu
+// Configuration for content elements
 export interface ContentElement {
     type: string;
     [key: string]: unknown;
@@ -234,6 +236,9 @@ export interface MediaItem {
     autoplay?: boolean;
     loop?: boolean;
     controls?: boolean;
+    /** Marks the entry shown first in the player. Set via
+     *  MediaView.setSelectedItem(id) (which clears any other) — not manually. */
+    selected?: boolean;
     sources: MediaSource[];
     meta?: Record<string, unknown>;
 }
@@ -434,14 +439,14 @@ export interface MapContent {
     pick?: MapPickConfig;                // required when mode === 'pick'
 }
 
-// Configuration pour les actions de soumission (convention-based)
+// Configuration for submit actions (convention-based)
 export interface SubmitAction {
     text: string;              // Button text: "Register", "Submit", etc.
     method?: HttpMethod;       // Optional: defaults to POST
     confirmMessage?: string;   // Optional confirmation: "Are you sure?"
 }
 
-// Schémas de validation Zod
+// Zod validation schemas
 export const FieldSchema = z.object({
     fieldType: z.string(),
     fieldId: z.string(),
@@ -468,11 +473,12 @@ export const ActionSchema = z.object({
     title: z.string(),
     desc: z.string().optional(),
     thumbnail: z.string().optional(),
+    badge: z.string().optional(),
     disabled: z.boolean().optional(),
     metadata: z.record(z.unknown()).optional(),
 });
 
-// Types pour les plugins
+// Types for plugins
 export interface ViewPlugin {
     name: string;
     version: string;
@@ -480,7 +486,7 @@ export interface ViewPlugin {
     priority?: number;
 }
 
-// Types pour les champs personnalisés
+// Types for custom fields
 export interface CustomFieldType {
     type: string;
     renderer: (config: Record<string, unknown>) => unknown;
@@ -488,12 +494,12 @@ export interface CustomFieldType {
     schema?: z.ZodSchema;
 }
 
-// Types pour la gestion d'état
+// Types for state management
 export interface ViewState {
     [key: string]: unknown;
 }
 
-// Types pour les résultats de validation
+// Types for validation results
 export interface ValidationError {
     field?: string;
     code?: string;
@@ -522,21 +528,21 @@ export function toValidationErrors(messages: string[], field?: string): Validati
     return messages.map(message => ({ message, field }));
 }
 
-// Types pour la sérialisation
+// Types for serialization
 export interface SerializationOptions {
     compress?: boolean;
     includeMetadata?: boolean;
     format?: 'json' | 'compact';
 }
 
-// Types pour l'internationalisation
+// Types for internationalization
 export interface I18nConfig {
     locale: string;
     fallbackLocale?: string;
     translations: Record<string, Record<string, string>>;
 }
 
-// Types pour le logging
+// Types for logging
 export interface LogEntry {
     timestamp: Date;
     level: 'debug' | 'info' | 'warn' | 'error';
@@ -545,7 +551,7 @@ export interface LogEntry {
     stack?: string;
 }
 
-// Types pour les coordonnées géographiques
+// Types for geographic coordinates
 export interface GeoPoint {
     lat: number;
     lon: number;
@@ -553,7 +559,7 @@ export interface GeoPoint {
     precision?: number;
 }
 
-// Types pour les configurations GPS
+// Types for GPS configurations
 export interface GPSConfig {
     altitude?: boolean;
     precision?: boolean;
@@ -561,15 +567,15 @@ export interface GPSConfig {
     timeout?: number;
 }
 
-// Types pour les configurations de fichiers
+// Types for file configurations
 export interface FileConfig {
-    maxSize?: number; // en bytes
+    maxSize?: number; // in bytes
     allowedTypes: string[];
     multiple?: boolean;
     compress?: boolean;
 }
 
-// Types pour les configurations QR (QRDisplay only)
+// Types for QR configurations (QRDisplay only)
 export interface QRConfig {
     size?: number;
     errorCorrection?: 'L' | 'M' | 'Q' | 'H';

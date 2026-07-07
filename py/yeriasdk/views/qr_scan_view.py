@@ -11,7 +11,23 @@ from ..errors.exceptions import InvalidParameterError
 
 
 class QRScanView(BaseView):
-    """View for scanning QR codes"""
+    """Builds an SGUI ``QRScan`` view — describes a QR/barcode scanner (the
+    mobile app owns the camera UI) and where to submit the scanned value.
+
+    Builder methods: ``set_intro`` (instructions), ``submit_button``
+    (manual-confirm flow, disables auto-submit), ``set_validation``
+    (client-side format/length/prefix checks), ``enable_preview`` (show/edit
+    the scanned value), ``set_auto_submit``.
+
+    Extends ``BaseView``. Created via the YeriaApp/YeriaUI factory, populated
+    with these builders, then serialized and signed into a v3 envelope by
+    ``serve()``.
+    """
+    @classmethod
+    def from_json(cls, json_view):
+        """Rehydrate a QRScan view from a wire JSON payload."""
+        return cls.from_json_as('QRScan', json_view)
+
 
     def __init__(self, view_id: str, title: str, process_id: Optional[str] = None):
         super().__init__(

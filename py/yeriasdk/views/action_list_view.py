@@ -10,7 +10,24 @@ from ..types.models import ActionConfig
 
 
 class ActionListView(BaseActionView):
-    """View for displaying actions in a list"""
+    """Builds an SGUI ``ActionList`` view — a vertical list of actionable
+    items, each with a code, title, optional description/thumbnail, and
+    navigation.
+
+    Builder methods: ``set_title``, ``set_intro``, and the action family
+    inherited from BaseActionView (``add_action``, ``remove_action``,
+    ``update_action``, ``has_actions``), overridden here to keep the serialized
+    ``content['actions']`` in sync.
+
+    Extends ``BaseActionView``. Created via the YeriaApp/YeriaUI factory,
+    populated with these builders, then serialized and signed into a v3
+    envelope by ``serve()``.
+    """
+    @classmethod
+    def from_json(cls, json_view):
+        """Rehydrate a ActionList view from a wire JSON payload."""
+        return cls.from_json_as('ActionList', json_view)
+
 
     def __init__(self, view_id: str, title: str, process_id: Optional[str] = None):
         super().__init__(

@@ -749,3 +749,89 @@ def validate_submission_url(
     )
 
 
+def validate_navigation_target(
+    target: str,
+    config: Optional[URLValidationConfig] = None,
+    *,
+    allow_relative: bool = True,
+    allow_view_id: bool = False,
+) -> ValidationResult:
+    """Validate a provider navigation target.
+
+    Accepts secure absolute URLs, safe relative paths, and optional view IDs.
+    """
+    if config is None:
+        config = URLValidationConfig(
+            allowed_domains=DEFAULT_URL_CONFIG.allowed_domains,
+            allowed_protocols=list(DEFAULT_URL_CONFIG.allowed_protocols),
+            block_private_ips=DEFAULT_URL_CONFIG.block_private_ips,
+            block_localhost=DEFAULT_URL_CONFIG.block_localhost,
+            max_url_length=DEFAULT_URL_CONFIG.max_url_length,
+        )
+
+    errors: List[ValidationError] = []
+    warnings: List[ValidationError] = []
+    trimmed = target.strip()
+
+    if not trimmed:
+        errors.append(create_validation_error("Navigation target cannot be empty"))
+        return ValidationResult(is_valid=False, errors=errors, warnings=None)
+
+    if config.max_url_length and len(trimmed) > config.max_url_length:
+        errors.append(
+            create_validation_error(
+                f"URL too long (max {config.max_url_length} characters)"
+            )
+        )
+
+    suspicious_patterns = [
+        re.compile(r"\.\."),
+        re.compile(r"javascript:", re.IGNORECASE),
+        re.compile(r"data:", re.IGNORECASE),
+        re.compile(r"vbscript:", re.IGNORECASE),
+        re.compile(r"file:", re.IGNORECASE),
+        re.compile(r"[\x00-\x1F\x7F]"),
+    ]
+    if any(pattern.search(trimmed) for pattern in suspicious_patterns):
+        errors.append(create_validation_error("URL contains suspicious patterns"))
+
+    if re.search(r"\s", trimmed):
+        errors.append(create_validation_error("Navigation target cannot contain whitespace"))
+
+    if re.match(r"^[a-zA-Z][a-zA-Z0-9+.-]*:", trimmed):
+        absolute_validation = validate_submission_url(trimmed, config)
+        return ValidationResult(
+            is_valid=len(errors) == 0 and absolute_validation.is_valid,
+            errors=[*errors, *absolute_validation.errors],
+            warnings=absolute_validation.warnings or (warnings if warnings else None),
+        )
+
+    if trimmed.startswith("//"):
+        errors.append(create_validation_error("Protocol-relative URLs are not allowed"))
+
+    looks_like_path = (
+        trimmed.startswith("/")
+        or trimmed.startswith("?")
+        or trimmed.startswith("#")
+        or "/" in trimmed
+    )
+    safe_relative_token = bool(re.fullmatch(r"[A-Za-z0-9._~\-]+", trimmed))
+    is_accepted = (
+        (allow_relative and looks_like_path)
+        or (allow_view_id and safe_relative_token)
+        or (allow_relative and safe_relative_token)
+    )
+
+    if not is_accepted:
+        errors.append(
+            create_validation_error(
+                "Navigation target must be an absolute https/http URL, a safe relative path, or an allowed viewId"
+            )
+        )
+
+    return ValidationResult(
+        is_valid=len(errors) == 0,
+        errors=errors,
+        warnings=warnings if warnings else None,
+    )
+

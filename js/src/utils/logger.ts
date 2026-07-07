@@ -60,7 +60,7 @@ export class Logger {
     private emit(entry: LogEntry): void {
         if (!this.shouldLog(entry.level)) return;
 
-        // Handler par défaut (console)
+        // Default handler (console)
         const defaultHandler = (entry: LogEntry) => {
             const prefix = `[${entry.timestamp.toISOString()}] [${entry.level.toUpperCase()}]`;
             const contextStr = entry.context ? ` ${JSON.stringify(entry.context)}` : '';
@@ -81,7 +81,7 @@ export class Logger {
             }
         };
 
-        // Exécuter tous les handlers
+        // Execute all handlers
         [defaultHandler, ...this.handlers].forEach(handler => {
             try {
                 handler(entry);
@@ -107,7 +107,7 @@ export class Logger {
         this.emit(this.createEntry('error', message, context));
     }
 
-    // Méthodes statiques pour faciliter l'utilisation
+    // Static methods for convenience
     static debug(message: string, context?: Record<string, unknown>): void {
         Logger.getInstance().debug(message, context);
     }

@@ -11,7 +11,22 @@ from ..errors.exceptions import MissingRequiredParameterError, InvalidParameterE
 
 
 class QRDisplayView(BaseView):
-    """View for displaying QR codes"""
+    """Builds an SGUI ``QRDisplay`` view — renders a QR code (from a URL or
+    base64 image) with a title and description, plus an optional action button.
+
+    Builder methods: ``set_intro`` (intro text), ``set_qr_code`` (image + title
+    + description + optional QRConfig), ``submit_button`` (optional action such
+    as Share/Export, POSTed to {service.base_url}/{view_id}).
+
+    Extends ``BaseView``. Created via the YeriaApp/YeriaUI factory, populated
+    with these builders, then serialized and signed into a v3 envelope by
+    ``serve()``.
+    """
+    @classmethod
+    def from_json(cls, json_view):
+        """Rehydrate a QRDisplay view from a wire JSON payload."""
+        return cls.from_json_as('QRDisplay', json_view)
+
 
     def __init__(self, view_id: str, title: str, process_id: Optional[str] = None):
         super().__init__(

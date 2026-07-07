@@ -18,7 +18,23 @@ from ..errors.exceptions import (
 
 
 class FormView(BaseView):
-    """View for displaying forms with validation"""
+    """Builds a Form SGUI view — an interactive data-entry form.
+
+    Fields are appended via ``add_field`` and the typed helpers
+    (``add_text_field``, ``add_email_field``, ``add_select_field``,
+    ``add_photo_field``, ``add_gps_field``, ...); ``submit_button`` /
+    ``update_button`` / ``delete_button`` define the submit action, and
+    ``inject_data`` / ``set_field_value`` pre-fill existing fields.
+
+    Extends ``BaseView``; instantiated by the YeriaApp/YeriaUI factory,
+    populated with these builders, then serialized to a JSON view description
+    and signed into a v3 envelope by ``serve()``.
+    """
+    @classmethod
+    def from_json(cls, json_view):
+        """Rehydrate a Form view from a wire JSON payload."""
+        return cls.from_json_as('Form', json_view)
+
 
     def __init__(self, form_id: str, title: str, process_id: Optional[str] = None):
         super().__init__(
@@ -43,12 +59,8 @@ class FormView(BaseView):
         self._field_validations: Dict[str, FieldValidation] = {}
 
     def set_intro(self, intro: str) -> "FormView":
-        """Set form introduction text"""
+        """Set form introduction text (like ActionList/ActionGrid/etc.)"""
         return self._set_intro_text("intro", intro)
-
-    def set_note(self, note: str) -> "FormView":
-        """Set form note (deprecated - use set_intro() instead)"""
-        return self.set_intro(note)
 
     def belongs_to_process(
         self,
@@ -133,6 +145,10 @@ class FormView(BaseView):
                 field["accept"] = params.accept
             if params.live is not None:
                 field["live"] = params.live
+            if params.altitude is not None:
+                field["altitude"] = params.altitude
+            if params.max_accuracy is not None:
+                field["maxAccuracy"] = params.max_accuracy
             if params.placeholder:
                 field["placeholder"] = params.placeholder
             if params.help_text:
@@ -233,7 +249,9 @@ class FormView(BaseView):
             FormFieldOption(
                 label=opt["label"],
                 value=opt["value"],
-                selected=opt.get("selected", False),
+                # None (not False) when unset: JS only adds `selected` once a
+                # value is applied (set_value); unset options omit the key.
+                selected=opt.get("selected", None),
             )
             for opt in options
         ]
@@ -282,9 +300,18 @@ class FormView(BaseView):
         is_required: bool = False,
         live_data: bool = False,
         altitude: Optional[bool] = None,
+        max_accuracy: Optional[float] = None,
         precision: Optional[bool] = None,
     ) -> "FormView":
-        params = FormFieldParams(required=is_required, live=live_data)
+        """``max_accuracy`` (metres) = the coarsest fix accepted, i.e. the
+        minimum required precision; the app captures until the reading is within
+        that radius. ``precision`` is the legacy boolean flag, superseded by it."""
+        params = FormFieldParams(
+            required=is_required,
+            live=live_data,
+            altitude=altitude,
+            max_accuracy=max_accuracy,
+        )
         return self.add_field("gps", field_id, field_label, params)
 
     def add_plus_code_field(

@@ -29,7 +29,7 @@ export const fileFormats: Record<string, string> = {
     aac: "audio/aac",
     wma: "audio/x-ms-wma",
 
-    // Vidéo
+    // Video
     mp4: "video/mp4",
     avi: "video/x-msvideo",
     mov: "video/quicktime",
@@ -56,7 +56,7 @@ export const fileFormats: Record<string, string> = {
     cpp: "text/x-c++src",
     c: "text/x-csrc",
 
-    // Autres
+    // Other
     sql: "application/sql",
     yaml: "application/x-yaml",
     yml: "application/x-yaml",
@@ -80,7 +80,7 @@ export class FileFormatManager {
     }
 
     /**
-     * Obtient les types MIME pour une liste de formats
+     * Gets the MIME types for a list of formats
      */
     static getMimeTypes(formats: string[]): string[] {
         if (!formats || !Array.isArray(formats) || formats.length === 0) {
@@ -98,22 +98,22 @@ export class FileFormatManager {
     }
 
     /**
-     * Obtient le type MIME pour un format spécifique
+     * Gets the MIME type for a specific format
      */
     getMimeType(format: string): string | undefined {
         const normalizedFormat = format.toLowerCase().replace(/^\./, '');
 
-        // Vérifier d'abord les formats personnalisés
+        // Check custom formats first
         if (this.customFormats.has(normalizedFormat)) {
             return this.customFormats.get(normalizedFormat);
         }
 
-        // Puis les formats standards
+        // Then the standard formats
         return fileFormats[normalizedFormat];
     }
 
     /**
-     * Ajoute un format personnalisé
+     * Adds a custom format
      */
     addCustomFormat(extension: string, mimeType: string): void {
         const normalizedExtension = extension.toLowerCase().replace(/^\./, '');
@@ -121,7 +121,7 @@ export class FileFormatManager {
     }
 
     /**
-     * Supprime un format personnalisé
+     * Removes a custom format
      */
     removeCustomFormat(extension: string): boolean {
         const normalizedExtension = extension.toLowerCase().replace(/^\./, '');
@@ -129,14 +129,14 @@ export class FileFormatManager {
     }
 
     /**
-     * Vérifie si un format est supporté
+     * Checks whether a format is supported
      */
     isSupported(format: string): boolean {
         return this.getMimeType(format) !== undefined;
     }
 
     /**
-     * Obtient tous les formats supportés
+     * Gets all supported formats
      */
     getSupportedFormats(): string[] {
         const standardFormats = Object.keys(fileFormats);
@@ -145,7 +145,7 @@ export class FileFormatManager {
     }
 
     /**
-     * Obtient les formats par catégorie
+     * Gets formats by category
      */
     getFormatsByCategory(): Record<string, string[]> {
         return {
@@ -160,7 +160,7 @@ export class FileFormatManager {
     }
 
     /**
-     * Valide une liste de formats
+     * Validates a list of formats
      */
     validateFormats(formats: string[]): { valid: string[]; invalid: string[] } {
         const valid: string[] = [];
@@ -178,17 +178,17 @@ export class FileFormatManager {
     }
 
     /**
-     * Obtient l'extension à partir d'un type MIME
+     * Gets the extension from a MIME type
      */
     getExtensionFromMimeType(mimeType: string): string | undefined {
-        // Chercher dans les formats standards
+        // Look in the standard formats
         for (const [ext, mime] of Object.entries(fileFormats)) {
             if (mime === mimeType) {
                 return ext;
             }
         }
 
-        // Chercher dans les formats personnalisés
+        // Look in the custom formats
         for (const [ext, mime] of this.customFormats.entries()) {
             if (mime === mimeType) {
                 return ext;
@@ -199,7 +199,7 @@ export class FileFormatManager {
     }
 
     /**
-     * Obtient les types MIME par catégorie
+     * Gets MIME types by category
      */
     getMimeTypesByCategory(): Record<string, string[]> {
         const categories = this.getFormatsByCategory();
@@ -215,7 +215,7 @@ export class FileFormatManager {
     }
 }
 
-// Fonction utilitaire pour la compatibilité avec l'ancien code
+// Utility function for backward compatibility with legacy code
 export function getMimeTypes(formats: string[]): string[] {
     return FileFormatManager.getMimeTypes(formats);
 } 

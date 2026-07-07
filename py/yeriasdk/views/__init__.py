@@ -6,6 +6,7 @@ from .message_view import MessageView
 from .reader_view import ReaderView
 from .action_list_view import ActionListView
 from .action_grid_view import ActionGridView
+from .icon_grid_view import IconGridView
 from .qr_scan_view import QRScanView
 from .qr_display_view import QRDisplayView
 from .card_view import CardView
@@ -21,6 +22,7 @@ __all__ = [
     "ReaderView",
     "ActionListView",
     "ActionGridView",
+    "IconGridView",
     "QRScanView",
     "QRDisplayView",
     "CardView",

@@ -23,6 +23,7 @@ ViewType = Literal[
     "Reader",
     "ActionList",
     "ActionGrid",
+    "IconGrid",
     "Form",
     "QRScan",
     "QRDisplay",
@@ -116,6 +117,10 @@ class FormFieldParams(FieldValidation):
     readonly: Optional[bool] = None
     min_date: Optional[str] = None  # For date fields: minimum date (YYYY-MM-DD)
     max_date: Optional[str] = None  # For date fields: maximum date (YYYY-MM-DD)
+    altitude: Optional[bool] = None  # GPS fields: include altitude in the value
+    # GPS fields: coarsest fix accepted, in METRES (= min required precision).
+    # The app captures until position.accuracy <= max_accuracy.
+    max_accuracy: Optional[float] = None
 
 
 # Action configuration
@@ -125,6 +130,7 @@ class ActionConfig:
     title: str
     desc: Optional[str] = None
     thumbnail: Optional[str] = None
+    badge: Optional[str] = None  # small overlay text on IconGrid tiles ("3", "New")
     disabled: Optional[bool] = None
     metadata: Optional[Dict[str, Any]] = None
 
@@ -250,6 +256,8 @@ class MediaItem:
     autoplay: Optional[bool] = None
     loop: Optional[bool] = None
     controls: Optional[bool] = None
+    # Set via MediaView.set_selected_item(id), not manually.
+    selected: Optional[bool] = None
     sources: List[MediaSource] = field(default_factory=list)
     meta: Optional[Dict[str, Any]] = None
 

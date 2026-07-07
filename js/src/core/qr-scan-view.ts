@@ -16,6 +16,11 @@ import { InvalidParameterError } from '../errors';
  * - Auto-submit: POST {service.baseUrl}/{viewId} with { qrData: "scanned-value" }
  * - With button: User scans, previews, clicks button to submit
  *
+ * Extends {@link BaseView}. Created via the YeriaApp/YeriaUI factory, populated
+ * with the builder methods below (setIntro, submitButton, setValidation,
+ * enablePreview, setAutoSubmit), then serialized and signed into a v3 envelope
+ * by serve().
+ *
  * @example
  * // Simple: Auto-submit after scan
  * const view = new QRScanView('scan-ticket', 'Scan Your Ticket')
@@ -39,6 +44,10 @@ import { InvalidParameterError } from '../errors';
  * // → Scans, validates pattern, shows preview, submits on button click
  */
 export class QRScanView extends BaseView {
+
+    static fromJson(json: Record<string, unknown>): QRScanView {
+        return QRScanView.fromJsonAs(QRScanView, 'QRScan', json);
+    }
     constructor(viewId: string, title: string, processId?: string) {
         super({
             id: viewId,

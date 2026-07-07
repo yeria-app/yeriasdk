@@ -11,7 +11,18 @@ from ..errors.exceptions import MissingRequiredParameterError
 
 
 class BaseActionView(BaseView, ABC):
-    """Abstract base class for action views (ActionList and ActionGrid)"""
+    """Abstract subclass of BaseView shared by the "action" family of views
+    (ActionListView, ActionGridView, IconGridView).
+
+    Factors out the action/item handling common to those views: adding,
+    updating, removing, querying, sorting and enabling/disabling the list of
+    actions that each concrete view renders. Subclasses implement
+    _sync_actions_to_content() to project the shared actions list into their
+    own content shape.
+
+    This class is ABSTRACT and is never instantiated directly; use one of the
+    concrete action views instead.
+    """
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

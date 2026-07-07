@@ -72,6 +72,17 @@ const actionGrid = yeriaApp
     .addAction('payments', 'Paiements', 'Suivez vos paiements', 'payments.png');
 views.push(actionGrid);
 
+const iconGrid = yeriaApp
+    .createIconGridView('home-launcher', 'Accueil')
+    .setIntro('Choisissez un service')
+    .setShape('circle')
+    .setColumns(4)
+    .addIcon('map', 'Carte', 'map.png')
+    .addIcon('wallet', 'Portefeuille', 'wallet.png', '3')
+    .addIcon('docs', 'Documents', 'docs.png')
+    .addIcon('support', 'Support', 'support.png');
+views.push(iconGrid);
+
 const qrScan = yeriaApp
     .createQRScanView('scan', 'Scanner un QR Code')
     .setIntro('Scannez un QR code pour continuer')

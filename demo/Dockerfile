@@ -32,6 +32,7 @@ RUN rm -rf ./node_modules/@numerum-tech/yeriasdk
 COPY --from=build /app/js/dist           ./node_modules/@numerum-tech/yeriasdk/dist
 COPY --from=build /app/js/package.json   ./node_modules/@numerum-tech/yeriasdk/package.json
 COPY --from=build /app/demo/dist         ./dist
+COPY --from=build /app/demo/public        ./public
 COPY --from=build /app/demo/package.json ./package.json
 
 ENV NODE_ENV=production

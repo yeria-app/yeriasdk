@@ -4,7 +4,22 @@ import { MissingRequiredParameterError } from '../errors';
 
 // TimelineView captures chronological progress such as onboarding steps or activity feeds.
 
+/**
+ * Builds a Timeline SGUI view — a chronological list of events such as
+ * onboarding steps or activity feeds.
+ *
+ * Entries are appended via `addItem`/`addEvent` or replaced wholesale with
+ * `setItems`; `setIntro` adds lead context text.
+ *
+ * Extends {@link BaseView}; instantiated by the YeriaApp/YeriaUI factory,
+ * populated with these builders, then serialized to a JSON view description and
+ * signed into a v3 envelope by `serve()`.
+ */
 export class TimelineView extends BaseView {
+
+    static fromJson(json: Record<string, unknown>): TimelineView {
+        return TimelineView.fromJsonAs(TimelineView, 'Timeline', json);
+    }
     constructor(viewId: string, title: string, processId?: string) {
         super({
             id: viewId,
@@ -45,6 +60,7 @@ export class TimelineView extends BaseView {
         return this;
     }
 
+    // Convenience builder that assembles a timeline entry from primitive fields and appends it.
     addEvent(
         id: string,
         title: string,

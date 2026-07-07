@@ -34,8 +34,16 @@ import {
  * `_default_shapes`, auto-created on first call) or a named layer (passed as
  * the optional final `layerId` argument). Named layers must be declared up
  * front via `addLayer({...})`.
+ *
+ * Extends {@link BaseView}; instantiated by the YeriaApp/YeriaUI factory,
+ * populated with these builders, then serialized to a JSON view description and
+ * signed into a v3 envelope by `serve()`.
  */
 export class MapView extends BaseView {
+
+    static fromJson(json: Record<string, unknown>): MapView {
+        return MapView.fromJsonAs(MapView, 'Map', json);
+    }
     public static readonly DEFAULT_MARKERS_LAYER_ID = '_default_markers';
     public static readonly DEFAULT_SHAPES_LAYER_ID  = '_default_shapes';
 
@@ -84,10 +92,15 @@ export class MapView extends BaseView {
         return this;
     }
 
+    // Turns the map into a location picker that submits the chosen point to config.submitUrl.
     setPickMode(config: MapPickConfig): this {
         if (!config || typeof config.submitUrl !== 'string' || !config.submitUrl.trim()) {
             throw new MissingRequiredParameterError('pick.submitUrl');
         }
+        const submitUrl = this.assertNavigationTarget('pick.submitUrl', config.submitUrl, {
+            allowRelative: true,
+            allowViewId: false
+        });
         if (config.initialLocation) {
             this.validateGeoPoint(config.initialLocation, 'pick.initialLocation');
         }
@@ -97,12 +110,13 @@ export class MapView extends BaseView {
         }
         const content = this.content as MapContent;
         content.mode = 'pick';
-        content.pick = { ...config };
+        content.pick = { ...config, submitUrl };
         return this;
     }
 
     // ─── layer management ───────────────────────────────────────────────
 
+    // Declares a named layer (markers/shapes/heatmap/tiles/geojson); ids must be unique.
     addLayer(layer: MapLayer): this {
         if (!layer || typeof layer !== 'object') {
             throw new MissingRequiredParameterError('layer');
@@ -140,6 +154,7 @@ export class MapView extends BaseView {
 
     // ─── markers (default layer or named target) ────────────────────────
 
+    // Adds one marker to the default markers layer, or to the named layerId if given.
     addMarker(marker: MapMarker, layerId?: string): this {
         if (!marker || typeof marker !== 'object') {
             throw new MissingRequiredParameterError('marker');
@@ -180,6 +195,7 @@ export class MapView extends BaseView {
 
     // ─── shapes (default layer or named target) ─────────────────────────
 
+    // Adds one shape to the default shapes layer, or to the named layerId if given.
     addShape(shape: MapShape, layerId?: string): this {
         if (!shape || typeof shape !== 'object') {
             throw new MissingRequiredParameterError('shape');
@@ -194,18 +210,22 @@ export class MapView extends BaseView {
         return this;
     }
 
+    // Convenience wrapper over addShape for a Polygon (>= 3 points).
     addPolygon(id: string, points: GeoPoint[], config?: MapShapeStyle, layerId?: string): this {
         return this.addShape({ id, type: 'Polygon', points, config }, layerId);
     }
 
+    // Convenience wrapper over addShape for a Circle (center + radius in meters).
     addCircle(id: string, center: GeoPoint, radius: number, config?: MapShapeStyle, layerId?: string): this {
         return this.addShape({ id, type: 'Circle', center, radius, config }, layerId);
     }
 
+    // Convenience wrapper over addShape for a Polyline (>= 2 points).
     addPolyline(id: string, points: GeoPoint[], config?: MapShapeStyle, layerId?: string): this {
         return this.addShape({ id, type: 'Polyline', points, config }, layerId);
     }
 
+    // Convenience wrapper over addShape for a Rectangle (south-west + north-east corners).
     addRectangle(id: string, sw: GeoPoint, ne: GeoPoint, config?: MapShapeStyle, layerId?: string): this {
         return this.addShape({ id, type: 'Rectangle', sw, ne, config }, layerId);
     }

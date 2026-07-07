@@ -23,11 +23,26 @@ from ..errors.exceptions import (
     InvalidParameterError,
 )
 from typing import Dict, Any, Optional, List, Union
-from ..utils.validators import validate_submission_url, DEFAULT_URL_CONFIG
+from ..utils.validators import (
+    URLValidationConfig,
+    validate_navigation_target,
+    DEFAULT_URL_CONFIG,
+)
 
 
 class BaseView(ABC):
-    """Abstract base class for all view types"""
+    """Abstract base for every Yeria SGUI view (Form, Reader, Card, Map, ...).
+
+    Holds the state common to all views: identity (id / type / process_id),
+    navigation (set_next / set_prev), metadata, and the serialization
+    (build / to_json) that produces the view's JSON description. Concrete views
+    are created via the YeriaApp / YeriaUI factory methods, populated, then
+    signed by their serialized output. Instances are mutable, per-request
+    builders -- not singletons.
+
+    This class is ABSTRACT and is never instantiated directly; use a concrete
+    view subclass instead.
+    """
 
     def __init__(self, config: Union[BaseViewConfig, Dict[str, Any]]):
         if isinstance(config, dict):
@@ -108,7 +123,7 @@ class BaseView(ABC):
                         )
                     )
 
-        elif self.type in ("ActionList", "ActionGrid"):
+        elif self.type in ("ActionList", "ActionGrid", "IconGrid"):
             if (
                 not self.content
                 or not isinstance(self.content, dict)
@@ -121,6 +136,14 @@ class BaseView(ABC):
                         "Action views must have at least one action"
                     )
                 )
+            if self.type == "IconGrid":
+                shape = self.content.get("shape") if isinstance(self.content, dict) else None
+                if shape is not None and shape not in ("circle", "square"):
+                    errors.append(
+                        create_validation_error(
+                            "IconGrid 'shape' must be 'circle' or 'square'"
+                        )
+                    )
 
         elif self.type == "Reader":
             if isinstance(self.content, dict):
@@ -296,8 +319,27 @@ class BaseView(ABC):
             warnings=warnings if warnings else None,
         )
 
-    def serve(self) -> Dict[str, Any]:
-        """Serve the view with validation"""
+    @staticmethod
+    def _strip_none(obj: Any) -> Any:
+        """Recursively drop dict keys whose value is None.
+
+        Mirrors JS ``JSON.stringify`` which omits ``undefined`` fields: the JS
+        SDK builds objects with optional keys and lets stringify drop the unset
+        ones, so its wire output never contains ``null``. Python builds the same
+        objects with explicit ``None`` — stripping them keeps the Python payload
+        structurally identical (transparent to the mobile renderer). ``False``,
+        ``0`` and ``""`` are preserved; only ``None`` is removed.
+        """
+        if isinstance(obj, dict):
+            return {k: BaseView._strip_none(v) for k, v in obj.items() if v is not None}
+        if isinstance(obj, list):
+            return [BaseView._strip_none(v) for v in obj]
+        return obj
+
+    def build(self) -> Dict[str, Any]:
+        """Validate the view and return its UNSIGNED JSON description (the wire
+        payload). This does NOT sign — signing is ``app.serve(view)``, which
+        calls this internally. Named ``build`` to avoid colliding with that."""
         validation = self._validate()
 
         if not validation.is_valid:
@@ -343,11 +385,82 @@ class BaseView(ABC):
                 "prev": self._navigation.prev,
             }
 
-        return result
+        # Drop None-valued keys so the payload matches the JS SDK, whose
+        # JSON.stringify omits undefined fields (see _strip_none).
+        return self._strip_none(result)
 
     def to_json(self) -> Dict[str, Any]:
-        """Return JSON representation of the view"""
-        return self.serve()
+        """Return JSON representation of the view (delegates to build())"""
+        return self.build()
+
+    @classmethod
+    def from_json_as(cls, expected_type: str, json_view: Dict[str, Any]) -> "BaseView":
+        """Shared rehydration: reconstruct a typed view from a wire JSON payload
+        (the output of ``to_json()``), bypassing the fluent constructor. Each
+        concrete view exposes a thin ``from_json(json)`` calling this with its
+        class + expected type; the type guard is the per-view check, and the
+        instance is run through ``validate_view()`` before being returned.
+
+        All serialisable state lives in ``content`` (no view overrides
+        ``serve()``), so restoring ``content`` + the id/type is faithful for
+        re-serving. Builder-only helpers are not restored.
+        """
+        if not isinstance(json_view, dict):
+            raise InvalidParameterError("json", json_view, "from_json expects a plain object view payload")
+        vid = json_view.get("id")
+        if not isinstance(vid, str) or not vid.strip():
+            raise InvalidParameterError("id", vid, "from_json requires a non-empty string id")
+        if json_view.get("type") != expected_type:
+            raise InvalidParameterError("type", json_view.get("type"), f'expected view type "{expected_type}"')
+        if "content" not in json_view or json_view.get("content") is None:
+            raise InvalidParameterError("content", json_view.get("content"), "from_json requires content")
+
+        inst = cls.__new__(cls)  # bypass __init__ (like a shallow clone)
+        inst.id = vid
+        inst.type = json_view["type"]
+        inst.content = json_view["content"]
+        state = json_view.get("state")
+        inst._state = state if isinstance(state, dict) else {}
+
+        # Restore metadata / navigation / process so re-serving is faithful.
+        meta = json_view.get("metadata")
+        if isinstance(meta, dict):
+            from datetime import datetime as _dt
+            ca = meta.get("createdAt")
+            try:
+                created = _dt.fromisoformat(ca) if isinstance(ca, str) else (ca or _dt.now())
+            except Exception:
+                created = _dt.now()
+            inst._metadata = ViewMetadata(
+                version=meta.get("version", "1.0.0"),
+                created_at=created,
+                author=meta.get("author"),
+                tags=meta.get("tags"),
+            )
+        else:
+            inst._metadata = None
+
+        nav = json_view.get("nav")
+        inst._navigation = NavigationConfig(next=nav.get("next"), prev=nav.get("prev")) if isinstance(nav, dict) else None
+
+        proc = json_view.get("process")
+        if isinstance(proc, dict) and proc.get("processId"):
+            inst._process_context = ProcessContext(
+                process_id=proc.get("processId"),
+                process_name=proc.get("processName"),
+                current_step=proc.get("currentStep"),
+                total_steps=proc.get("totalSteps"),
+                step_name=proc.get("stepName"),
+                can_go_back=proc.get("canGoBack"),
+                can_skip=proc.get("canSkip"),
+            )
+        else:
+            inst._process_context = None
+
+        validation = inst.validate_view()
+        if not validation.is_valid:
+            raise ViewValidationError(inst.id, inst.type, [e.message for e in validation.errors])
+        return inst
 
     def set_state(self, key: str, value: Any) -> None:
         """Update view state"""
@@ -422,44 +535,59 @@ class BaseView(ABC):
 
         return self
 
-    def set_next(self, url: str) -> "BaseView":
-        """Set next view (navigation) with URL validation"""
-        # Validate URL for security
-        config = DEFAULT_URL_CONFIG
-        config.block_localhost = False  # Allow localhost for development
-        config.block_private_ips = False  # Allow private IPs for development
-
-        validation = validate_submission_url(url, config)
+    def _assert_navigation_target(
+        self,
+        field_name: str,
+        target: str,
+        *,
+        allow_relative: bool = True,
+        allow_view_id: bool = False,
+    ) -> str:
+        config = URLValidationConfig(
+            allowed_domains=DEFAULT_URL_CONFIG.allowed_domains,
+            allowed_protocols=list(DEFAULT_URL_CONFIG.allowed_protocols),
+            block_private_ips=False,
+            block_localhost=False,
+            max_url_length=DEFAULT_URL_CONFIG.max_url_length,
+        )
+        trimmed = target.strip()
+        validation = validate_navigation_target(
+            trimmed,
+            config,
+            allow_relative=allow_relative,
+            allow_view_id=allow_view_id,
+        )
 
         if not validation.is_valid:
             error_messages = "; ".join([e.message for e in validation.errors])
             raise InvalidParameterError(
-                "url", url, f"Invalid navigation URL: {error_messages}"
+                field_name,
+                target,
+                f"Invalid navigation target: {error_messages}",
             )
+
+        return trimmed
+
+    def set_next(self, url: str) -> "BaseView":
+        """Set next view (navigation) with URL validation"""
+        target = self._assert_navigation_target(
+            "url", url, allow_relative=True, allow_view_id=True
+        )
 
         if not self._navigation:
             self._navigation = NavigationConfig()
-        self._navigation.next = url
+        self._navigation.next = target
         return self
 
     def set_prev(self, url: str) -> "BaseView":
         """Set previous view (navigation) with URL validation"""
-        # Validate URL for security
-        config = DEFAULT_URL_CONFIG
-        config.block_localhost = False  # Allow localhost for development
-        config.block_private_ips = False  # Allow private IPs for development
-
-        validation = validate_submission_url(url, config)
-
-        if not validation.is_valid:
-            error_messages = "; ".join([e.message for e in validation.errors])
-            raise InvalidParameterError(
-                "url", url, f"Invalid navigation URL: {error_messages}"
-            )
+        target = self._assert_navigation_target(
+            "url", url, allow_relative=True, allow_view_id=True
+        )
 
         if not self._navigation:
             self._navigation = NavigationConfig()
-        self._navigation.prev = url
+        self._navigation.prev = target
         return self
 
     def set_process(
@@ -516,5 +644,4 @@ class BaseView(ABC):
     def destroy(self) -> None:
         """Clean up view resources"""
         self._state = {}
-
 

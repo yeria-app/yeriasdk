@@ -4,19 +4,20 @@
 // responsible for proving the caller is who Yeria says they are before
 // serving any signed view.
 //
-// Verification flow (handled inside the SDK):
+// Verification flow (all handled inside `app.verifyUserToken`):
 //   1. Extract Bearer token from `Authorization`.
-//   2. Read `kid` from the JWT header.
-//   3. Resolve `kid` → Ed25519 PEM via YeriaKeyStore (cached lookup against
-//      `GET /api/v1/public/registry/public-keys/{kid}` on yeria-admin).
-//   4. Verify signature, `aud='yeria'`, `iss='yeria'`, and `exp`.
+//   2. The SDK reads `kid` from the JWT header and resolves it → Ed25519 PEM
+//      against `GET /api/v1/public/registry/public-keys/{kid}` on yeria-admin
+//      (rotation-aware, cached internally — you never wire a resolver).
+//   3. It verifies signature, `iss='yeria'`, optional `aud`, and `exp`.
 //
-// Anything that fails → 401 + a JSON body the SDK renderer can surface.
-// Claims land on `res.locals.userClaims` for downstream route handlers
-// (avoids mutating the Request type and works without an Express ambient).
+// Anything that fails → 401 + a JSON body the SDK renderer can surface. A
+// YeriaPlatformUnreachableError (Yeria itself down) is surfaced as 503, not
+// 401 — "cannot verify" is not "invalid". Claims land on
+// `res.locals.userClaims` for downstream route handlers.
 
 import type { Request, Response, NextFunction, RequestHandler } from 'express';
-import { YeriaApp, YeriaKeyStore, type UserTokenClaims } from '@numerum-tech/yeriasdk';
+import { YeriaApp, YeriaPlatformUnreachableError, type YeriaTokenClaims } from '@numerum-tech/yeriasdk';
 
 const BEARER_RE = /^Bearer\s+(.+)$/i;
 
@@ -40,20 +41,16 @@ export interface YeriaAuthOptions {
      * via the underlying verifyUserToken path.
      */
     expectedServiceId?: string | number;
-    /**
-     * Per-kid cache TTL forwarded to YeriaKeyStore. Default 10 min.
-     */
-    keyTtlMs?: number;
 }
 
 export function buildYeriaAuthMiddleware(opts: YeriaAuthOptions): RequestHandler {
     if (!opts || !opts.yeriaBaseUrl) {
         throw new Error('buildYeriaAuthMiddleware: yeriaBaseUrl is required');
     }
-    const keys = new YeriaKeyStore({
-        baseUrl: opts.yeriaBaseUrl,
-        ttlMs: opts.keyTtlMs,
-    });
+    // A verify-only YeriaApp: it needs `baseUrl` to resolve `kid` headers. The
+    // internal key cache (and its rotation-aware lookup) lives on this single
+    // instance — construct it once and reuse it for every request.
+    const app = new YeriaApp({ appId: 'yeria-demo-auth', baseUrl: opts.yeriaBaseUrl });
 
     return async function yeriaAuth(req: Request, res: Response, next: NextFunction) {
         const token = extractBearer(req);
@@ -65,15 +62,23 @@ export function buildYeriaAuthMiddleware(opts: YeriaAuthOptions): RequestHandler
             return;
         }
         try {
-            const claims: UserTokenClaims = await YeriaApp.verifyUserTokenWithResolver(
+            const claims: YeriaTokenClaims = await app.verifyUserToken(
                 token,
-                (kid) => keys.getByKid(kid),
                 opts.expectedServiceId,
             );
             res.locals.userClaims = claims;
             next();
         } catch (err: any) {
-            // SignatureVerificationError | ViewExpiredError | resolver miss.
+            if (err instanceof YeriaPlatformUnreachableError) {
+                // Yeria itself is unreachable — we could not make a decision.
+                // 503, not 401: this is "cannot verify now", not "invalid".
+                res.status(503).json({
+                    error: 'yeria_unreachable',
+                    message: 'Could not reach Yeria to verify the token — retry shortly.',
+                });
+                return;
+            }
+            // SignatureVerificationError | ViewExpiredError | unknown key.
             // Keep the body shape stable so the renderer can localize.
             res.status(401).json({
                 error: 'unauthorized',

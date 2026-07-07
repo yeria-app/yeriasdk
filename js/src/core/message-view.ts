@@ -15,7 +15,23 @@ export interface MessageContent {
     meta?: Record<string, unknown>;
 }
 
+/**
+ * Builds a Message SGUI view — a titled notice/dialog with a severity and up to
+ * two actions.
+ *
+ * `setBody`/`setIntro`/`setSeverity` set the content and tone; `setPrimaryAction`
+ * and `setSecondaryAction` (aliased by `submitButton`) define the confirm/cancel
+ * buttons, and `setDismissible` controls whether it can be closed without acting.
+ *
+ * Extends {@link BaseView}; instantiated by the YeriaApp/YeriaUI factory,
+ * populated with these builders, then serialized to a JSON view description and
+ * signed into a v3 envelope by `serve()`.
+ */
 export class MessageView extends BaseView {
+
+    static fromJson(json: Record<string, unknown>): MessageView {
+        return MessageView.fromJsonAs(MessageView, 'Message', json);
+    }
     constructor(viewId: string, title: string, processId?: string) {
         super({
             id: viewId,
@@ -41,14 +57,14 @@ export class MessageView extends BaseView {
     }
 
     /**
-     * Définit le texte d'introduction
+     * Sets the introduction text
      */
     setIntro(intro: string): this {
         return this.setIntroText('intro', intro);
     }
 
     /**
-     * Définit le corps principal du message
+     * Sets the main body of the message
      */
     setBody(body: string): this {
         if (!body || body.trim().length === 0) {
@@ -60,7 +76,7 @@ export class MessageView extends BaseView {
     }
 
     /**
-     * Définit la sévérité du message (info, success, warning, error)
+     * Sets the message severity (info, success, warning, error)
      */
     setSeverity(severity: MessageSeverity): this {
         (this.content as MessageContent).severity = severity;
@@ -68,7 +84,7 @@ export class MessageView extends BaseView {
     }
 
     /**
-     * Configure l'action principale (OK)
+     * Configures the primary action (OK)
      */
     setPrimaryAction(text: string, method: HttpMethod = 'POST', confirmMessage?: string): this {
         if (!text || text.trim().length === 0) {
@@ -85,14 +101,14 @@ export class MessageView extends BaseView {
     }
 
     /**
-     * Alias de compatibilité avec l'ancienne API
+     * Compatibility alias for the legacy API
      */
     submitButton(text: string, method: HttpMethod = 'POST', confirmMessage?: string): this {
         return this.setPrimaryAction(text, method, confirmMessage);
     }
 
     /**
-     * Configure l'action secondaire (Cancel / Reject)
+     * Configures the secondary action (Cancel / Reject)
      */
     setSecondaryAction(text: string, method: HttpMethod = 'POST', confirmMessage?: string): this {
         if (!text || text.trim().length === 0) {
@@ -109,7 +125,7 @@ export class MessageView extends BaseView {
     }
 
     /**
-     * Supprime l'action secondaire si elle existe
+     * Removes the secondary action if it exists
      */
     clearSecondaryAction(): this {
         (this.content as MessageContent).cancel = undefined;
@@ -117,7 +133,7 @@ export class MessageView extends BaseView {
     }
 
     /**
-     * Définit si le message peut être fermé sans action
+     * Sets whether the message can be dismissed without acting
      */
     setDismissible(dismissible: boolean = true): this {
         (this.content as MessageContent).canDismiss = dismissible;
@@ -125,7 +141,7 @@ export class MessageView extends BaseView {
     }
 
     /**
-     * Ajoute des métadonnées spécifiques au message
+     * Adds message-specific metadata
      */
     setMetadata(metadata: Record<string, unknown>): this {
         (this.content as MessageContent).meta = { ...metadata };

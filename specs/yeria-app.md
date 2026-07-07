@@ -60,6 +60,12 @@ Generates a signed response for a view. Returns an object with:
 - `timestamp`: Timestamp in milliseconds
 - `view`: The view JSON object
 
+```javascript
+serveRawView(view: Record<string, unknown>): SignedEnvelope
+```
+
+Signs a pre-built view JSON block directly. This is intended for providers that mostly return static screens and do not need the builder API for every field.
+
 ### Verification
 
 ```javascript
@@ -129,6 +135,7 @@ Returns the public key for client-side verification.
 | `createMediaView(viewId, title, processId?)` | `viewId` - View identifier<br>`title` - View title<br>`processId` - Optional process ID | `MediaView` | Creates a media view |
 | `createMapView(viewId, title, processId?)` | `viewId` - View identifier<br>`title` - View title<br>`processId` - Optional process ID | `MapView` | Creates a map view |
 | `serve(view)` | `view` - BaseView instance | `SecureViewResponse` | Generates a signed response for a view |
+| `serveRawView(view)` | `view` - plain view JSON object | `SignedEnvelope` | Signs a pre-built static view payload |
 | `verifyIntegrity(response)` | `response` - SecureViewResponse object | `boolean` | Verifies the integrity of a secure view response |
 | `getPublicKey()` | - | `string` | Returns the public key for client-side verification |
 | `static verifySignature(publicKey, response, onError?)` | `publicKey` - Public key (PEM)<br>`response` - SecureViewResponse<br>`onError` - Optional error callback | `boolean` | Static method to verify signature on client side |
@@ -161,6 +168,21 @@ const response = yeriaApp.serve(form);
 
 // Verify integrity
 const isValid = yeriaApp.verifyIntegrity(response);
+```
+
+### Serving a Static JSON View
+
+```javascript
+const response = yeriaApp.serveRawView({
+  id: 'home-static',
+  type: 'Reader',
+  content: {
+    title: 'Welcome',
+    body: [
+      { type: 'paragraph', text: 'This screen is mostly static.' }
+    ]
+  }
+});
 ```
 
 ## Complete JSON Example (Secure View Response)
@@ -366,4 +388,3 @@ try {
 // Get public key for client-side verification
 const publicKey = yeriaApp.getPublicKey();
 ```
-

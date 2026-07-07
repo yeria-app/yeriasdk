@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { YeriaApp } from '@numerum-tech/yeriasdk';
+import { YeriaApp, YeriaUI } from '@numerum-tech/yeriasdk';
 import { DEMO_KEYS } from '../security/demo-keys';
 
 const router = Router();
@@ -13,8 +13,8 @@ const yeriaApp = new YeriaApp({
 
 // Comprehensive ReaderView with all element types
 router.get('/', (req: Request, res: Response) => {
-  const reader = yeriaApp
-    .createReaderView('comprehensive-reader', 'ReaderView Complet - Tous les Éléments')
+  const reader = YeriaUI
+    .createReaderView('comprehensive-reader', 'ReaderView')
     .setIntro('Ce lecteur démontre tous les types d\'éléments disponibles dans le ReaderView')
 
     // Paragraphes
