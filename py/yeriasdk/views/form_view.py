@@ -98,7 +98,8 @@ class FormView(BaseView):
         params: Optional[FormFieldParams] = None,
     ) -> "FormView":
         """Add a field with validation"""
-        if not field_id or not field_label or not field_type:
+        # Separators are visual-only and legitimately carry an empty label.
+        if not field_id or not field_type or (field_type != "separator" and not field_label):
             raise MissingRequiredParameterError("fieldId, fieldLabel, and fieldType")
 
         # Validate the field
@@ -171,7 +172,7 @@ class FormView(BaseView):
     def submit_button(
         self, text: str, method: HttpMethod = "POST", confirm_message: Optional[str] = None
     ) -> "FormView":
-        """Define submit button for the form"""
+        """Define the method/button used to submit back to the URL that returned the form."""
         self.content["submit"] = {
             "text": text,
             "method": method,
@@ -361,13 +362,15 @@ class FormView(BaseView):
         params = FormFieldParams(required=is_required)
         return self.add_field("checkbox", field_id, field_label, params)
 
-    def add_separator(self, field_id: Optional[str] = None) -> "FormView":
+    def add_separator(self, field_id: Optional[str] = None, label: str = "") -> "FormView":
         """Add a visual separator to group form fields
 
         Separators are rendered as gaps or lines by the mobile app renderer.
 
         Args:
             field_id: Optional field ID. If not provided, auto-generates a unique ID.
+            label: Optional label. Empty by default; the mobile renderer may
+                display it once separator-label rendering lands.
 
         Returns:
             self for chaining
@@ -380,7 +383,7 @@ class FormView(BaseView):
         import time
         import random
         separator_id = field_id or f"separator-{int(time.time() * 1000)}-{random.randint(1000, 9999)}"
-        return self.add_field("separator", separator_id, "", None)
+        return self.add_field("separator", separator_id, label, None)
 
     def inject_data(self, data: Dict[str, Any]) -> List[str]:
         """Inject data into existing form fields"""
@@ -498,4 +501,3 @@ class FormView(BaseView):
         return [
             f["fieldId"] for f in self.content["fields"] if f.get("required")
         ]
-

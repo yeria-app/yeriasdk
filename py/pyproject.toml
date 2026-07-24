@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "yeriasdk"
-version = "1.2.0"
+version = "1.3.0"
 description = "A modern Python SDK for generating dynamic JSON interfaces"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -40,9 +40,9 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/numerum-tech/yeriasdk"
-Repository = "https://github.com/numerum-tech/yeriasdk.git"
-Issues = "https://github.com/numerum-tech/yeriasdk/issues"
+Homepage = "https://github.com/yeria-app/yeriasdk"
+Repository = "https://github.com/yeria-app/yeriasdk.git"
+Issues = "https://github.com/yeria-app/yeriasdk/issues"
 
 [tool.setuptools.packages.find]
 where = ["."]

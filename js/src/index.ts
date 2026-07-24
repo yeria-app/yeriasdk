@@ -20,6 +20,8 @@ export { YeriaApp } from './core/yeria-app';
 // `YeriaUI` — keyless view factory: `YeriaUI.createFormView(...)`, `fromJson`.
 //         Import and use directly, no construction.
 export { YeriaUI } from './core/yeria-ui';
+export { YeriaLink } from './core/yeria-link';
+export type { YeriaLinkFormat, YeriaLinkOptions } from './core/yeria-link';
 
 export type {
     YeriaAppConfig,

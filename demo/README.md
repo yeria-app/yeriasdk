@@ -271,7 +271,7 @@ Apache License 2.0 - see the LICENSE and NOTICE files for details. Copyright 202
 ## 🙏 Acknowledgments
 
 Built with:
-- [Yeria SDK](https://github.com/numerum-tech/yeriasdk)
+- [Yeria SDK](https://github.com/yeria-app/yeriasdk)
 - [Express.js](https://expressjs.com/)
 - [TypeScript](https://www.typescriptlang.org/)
 - [Tailwind CSS](https://tailwindcss.com/)

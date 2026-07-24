@@ -30,12 +30,6 @@ class TestFormView:
         form.set_intro("Please fill in the form")
         assert form.content["intro"] == "Please fill in the form"
 
-    def test_set_note_deprecated(self):
-        """Test that set_note() still works for backward compatibility"""
-        form = FormView("test-form", "Test Form")
-        form.set_note("Old note method")
-        assert form.content["intro"] == "Old note method"
-
     def test_add_text_field(self):
         """Test adding a text field"""
         form = FormView("test-form", "Test Form")
@@ -64,10 +58,20 @@ class TestFormView:
         """Test adding a separator with explicit ID"""
         form = FormView("test-form", "Test Form")
         form.add_separator("custom-separator")
-        
+
         separator = form.content["fields"][0]
         assert separator["fieldType"] == "separator"
         assert separator["fieldId"] == "custom-separator"
+
+    def test_add_separator_with_label(self):
+        """Test adding a separator that carries an optional label"""
+        form = FormView("test-form", "Test Form")
+        form.add_separator("sep-1", "Contact details")
+
+        separator = form.content["fields"][0]
+        assert separator["fieldType"] == "separator"
+        assert separator["fieldId"] == "sep-1"
+        assert separator["fieldLabel"] == "Contact details"
 
     def test_get_field_count(self):
         """Test get_field_count() method"""

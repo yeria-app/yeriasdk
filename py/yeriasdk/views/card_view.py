@@ -8,6 +8,7 @@ from datetime import datetime
 from ..core.base_view import BaseView
 from ..types.models import CardActionVariant, HttpMethod
 from ..errors.exceptions import InvalidParameterError, MissingRequiredParameterError
+from ..core.yeria_link import YeriaLink
 
 
 class CardView(BaseView):
@@ -133,9 +134,15 @@ class CardView(BaseView):
             "text": trimmed_text,
             "method": method,
             "confirmMessage": confirm_message,
-            "href": self._assert_navigation_target(
-                "href", href, allow_relative=True, allow_view_id=False
-            ) if href else None,
+            "href": (
+                href.strip()
+                if href and YeriaLink.is_valid(href)
+                else self._assert_navigation_target(
+                    "href", href, allow_relative=True, allow_view_id=False
+                )
+                if href
+                else None
+            ),
             "icon": icon.strip() if icon else None,
             "variant": variant,
         }

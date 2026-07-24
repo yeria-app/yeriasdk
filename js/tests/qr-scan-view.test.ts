@@ -261,6 +261,7 @@ describe('QRScanView - Simplified Design Tests', () => {
     describe('enablePreview() / disablePreview()', () => {
         it('should enable preview with default settings', () => {
             view.enablePreview();
+            view.submitButton('Confirm');
 
             const preview = (view.toJSON().content as any)['preview'];
             expect(preview?.enabled).toBe(true);
@@ -270,6 +271,7 @@ describe('QRScanView - Simplified Design Tests', () => {
 
         it('should enable editable preview', () => {
             view.enablePreview(true, 'Barcode');
+            view.submitButton('Confirm');
 
             const preview = (view.toJSON().content as any)['preview'];
             expect(preview?.editable).toBe(true);
@@ -278,6 +280,7 @@ describe('QRScanView - Simplified Design Tests', () => {
 
         it('should use default label if not provided', () => {
             view.enablePreview(false);
+            view.submitButton('Confirm');
 
             const preview = (view.toJSON().content as any)['preview'];
             expect(preview?.label).toBe('Scanned Code');
@@ -285,6 +288,7 @@ describe('QRScanView - Simplified Design Tests', () => {
 
         it('should trim label text', () => {
             view.enablePreview(false, '  Product Code  ');
+            view.submitButton('Confirm');
 
             const preview = (view.toJSON().content as any)['preview'];
             expect(preview?.label).toBe('Product Code');
@@ -292,6 +296,7 @@ describe('QRScanView - Simplified Design Tests', () => {
 
         it('should disable preview', () => {
             view.enablePreview(true, 'Test');
+            view.submitButton('Confirm');
             expect(((view.toJSON().content as any)['preview']?.enabled ?? false)).toBe(true);
 
             view.disablePreview();

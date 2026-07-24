@@ -1,6 +1,6 @@
 {
   "name": "@numerum-tech/yeriasdk",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "An SDK for generating dynamic interfaces for the Yeria application ecosystem",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -37,11 +37,11 @@
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/numerum-tech/yeriasdk.git"
+    "url": "https://github.com/yeria-app/yeriasdk.git"
   },
-  "homepage": "https://github.com/numerum-tech/yeriasdk#readme",
+  "homepage": "https://github.com/yeria-app/yeriasdk#readme",
   "bugs": {
-    "url": "https://github.com/numerum-tech/yeriasdk/issues"
+    "url": "https://github.com/yeria-app/yeriasdk/issues"
   },
   "devDependencies": {
     "@types/jest": "^29.5.14",

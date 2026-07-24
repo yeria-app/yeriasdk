@@ -4,7 +4,10 @@
 
 The `FormView` component is used to create dynamic forms with various field types, validation rules, and submission actions. It supports a wide range of input types including text, email, password, number, date, select, file uploads, GPS coordinates, and more.
 
-Forms follow a convention-based submission pattern where the mobile app POSTs form data to `{service.baseUrl}/{formId}`.
+Forms submit to the exact service URL whose response returned the form. That URL
+is retained by the client, validated to remain inside the service's declared
+base URL area, and is not configurable in the form payload. `content.submit`
+controls only the button presentation and HTTP method.
 
 ## Fields Description
 
@@ -15,7 +18,7 @@ Forms follow a convention-based submission pattern where the mobile app POSTs fo
 | `content` | `FormContent` | Yes | Form content object |
 | `content.title` | `string` | Yes | Form title displayed to the user |
 | `content.intro` | `string` | No | Optional introduction/instructions shown above fields |
-| `content.submit` | `SubmitAction` | No | Submit button configuration |
+| `content.submit` | `SubmitAction` | No | Submit button and HTTP method configuration; it cannot override the destination URL |
 | `content.submit.text` | `string` | Yes* | Button text (required if submit is set) |
 | `content.submit.method` | `HttpMethod` | No | HTTP method (default: `"POST"`) |
 | `content.submit.confirmMessage` | `string` | No | Optional confirmation dialog message |
@@ -339,4 +342,3 @@ const form = yeriaApp
   }
 }
 ```
-

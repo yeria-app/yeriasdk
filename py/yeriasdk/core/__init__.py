@@ -3,6 +3,7 @@
 from .base_view import BaseView
 from .yeria_app import YeriaApp, YeriaAppConfig
 from .yeria_ui import YeriaUI
+from .yeria_link import YeriaLink, YeriaLinkFormat
 from .yeria_protocol import (
     SignedEnvelope,
     DecodedPayload,
@@ -20,6 +21,8 @@ __all__ = [
     "YeriaApp",
     "YeriaAppConfig",
     "YeriaUI",
+    "YeriaLink",
+    "YeriaLinkFormat",
     "SignedEnvelope",
     "DecodedPayload",
     "YeriaTokenClaims",

@@ -47,6 +47,38 @@ print(response.view)  # The view JSON
 print(response.signature)  # Ed25519 signature
 ```
 
+## Yeria Links
+
+`YeriaLink` generates canonical links without making a network request. HTTPS
+is the default so the same link can be displayed on a website or inside an
+application.
+
+```python
+from yeriasdk import CardView, ReaderView, YeriaLink
+
+chat_url = YeriaLink.chat("catalog-service")
+# https://yeria.app/dl/c/catalog-service
+
+component_url = YeriaLink.component(
+    "catalog-service",
+    "/orders?mode=edit",
+)
+
+reader = ReaderView("links", "Useful links")
+reader.add_link(chat_url, "Open chat")
+
+card = CardView("order", "Order").set_description("Order details")
+card.add_action("Edit", "GET", href=component_url)
+
+# For an application that already knows Yeria is installed:
+compact_url = YeriaLink.pin("catalog-service", format="yeria")
+# yeria://dl/p/catalog-service
+```
+
+Available methods are `service`, `component`, `chat`, `pin`, and `subscribe`.
+Service IDs are URL-safe strings and component paths must remain relative to
+the service.
+
 ## Static JSON Views
 
 ```python

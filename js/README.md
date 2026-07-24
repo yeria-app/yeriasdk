@@ -40,6 +40,39 @@ npm install @numerum-tech/yeriasdk
 > - **ReaderView** : Pour afficher du contenu riche en lecture seule (articles, guides, etc.)
 > - Ces deux types de vues ont des API complètement différentes !
 
+### Liens vers Yeria
+
+`YeriaLink` génère uniquement des liens canoniques. Le format HTTPS est
+recommandé par défaut : il fonctionne sur le web et ouvre l’application lorsque
+les App Links / Universal Links sont configurés.
+
+```typescript
+import { CardView, ReaderView, YeriaLink } from '@numerum-tech/yeriasdk';
+
+const chatUrl = YeriaLink.chat('catalog-service');
+// https://yeria.app/dl/c/catalog-service
+
+const componentUrl = YeriaLink.component(
+  'catalog-service',
+  '/orders?mode=edit'
+);
+
+const reader = new ReaderView('links', 'Liens utiles')
+  .addLink(chatUrl, 'Ouvrir le chat');
+
+const card = new CardView('order', 'Commande')
+  .setDescription('Consulter ou modifier cette commande')
+  .addAction('Modifier', 'GET', { href: componentUrl });
+
+// Pour une application qui sait déjà que Yeria est installée :
+const compactUrl = YeriaLink.pin('catalog-service', { format: 'yeria' });
+// yeria://dl/p/catalog-service
+```
+
+Méthodes disponibles : `service`, `component`, `chat`, `pin` et `subscribe`.
+Les identifiants de service sont des chaînes URL-safe ; le chemin de composant
+doit rester relatif au service.
+
 ### Formulaires
 
 ```typescript

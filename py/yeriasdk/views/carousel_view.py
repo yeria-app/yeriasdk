@@ -8,6 +8,7 @@ from datetime import datetime
 from ..core.base_view import BaseView
 from ..types.models import CarouselSettings, CarouselSlide, CardAction, HttpMethod, CardActionVariant
 from ..errors.exceptions import MissingRequiredParameterError, ElementNotFoundError
+from ..core.yeria_link import YeriaLink
 
 
 class CarouselView(BaseView):
@@ -185,9 +186,15 @@ class CarouselView(BaseView):
             "text": text.strip(),
             "method": method,
             "confirmMessage": confirm_message,
-            "href": self._assert_navigation_target(
-                "href", href, allow_relative=True, allow_view_id=False
-            ) if href else None,
+            "href": (
+                href.strip()
+                if href and YeriaLink.is_valid(href)
+                else self._assert_navigation_target(
+                    "href", href, allow_relative=True, allow_view_id=False
+                )
+                if href
+                else None
+            ),
             "icon": icon.strip() if icon else None,
             "variant": variant,
         }

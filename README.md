@@ -36,6 +36,8 @@ All language ports share the same core features:
 
 - **12 View Types**: Form, Reader, ActionList, ActionGrid, QRScan, QRDisplay, Message, Card, Carousel, Timeline, Media, Map
 - **Notifications**: Send signed notifications to users via the Yeria platform
+- **Yeria Links**: Generate canonical HTTPS or `yeria:` links for services,
+  components, chat, pinning, and subscriptions
 - **Ed25519 Signing**: Secure view signing and verification
 - **Stateless Architecture**: No internal state, perfect for serverless
 - **Validation**: Built-in field and form validation

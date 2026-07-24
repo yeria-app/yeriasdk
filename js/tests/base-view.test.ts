@@ -90,11 +90,10 @@ describe('BaseView - Navigation URL Validation', () => {
 
         it('should reject malformed URLs', () => {
             const malformedUrls = [
-                'not-a-url',
-                'htp://example.com',
-                '://example.com',
-                'https://',
-                ''
+                'htp://example.com',   // unknown scheme
+                'ftp://example.com',   // disallowed protocol
+                'https://',            // no host, unparseable
+                ''                     // empty
             ];
 
             malformedUrls.forEach(url => {
@@ -121,10 +120,10 @@ describe('BaseView - Navigation URL Validation', () => {
         it('should provide detailed error messages', () => {
             try {
                 view.setNext('javascript:alert(1)');
-                fail('Should have thrown');
+                throw new Error('Should have thrown');
             } catch (error) {
                 expect(error).toBeInstanceOf(InvalidParameterError);
-                expect((error as Error).message).toContain('Invalid navigation URL');
+                expect((error as Error).message).toContain('Invalid navigation target');
             }
         });
     });
@@ -190,11 +189,11 @@ describe('BaseView - Navigation URL Validation', () => {
         });
 
         it('should allow relative paths (for same-domain navigation)', () => {
-            // Relative paths will fail URL validation as they're not full URLs
-            // This is expected behavior - navigation should use full URLs
+            // setNext/setPrev permit safe relative paths for same-domain navigation.
             expect(() => {
                 view.setNext('/relative/path');
-            }).toThrow();
+            }).not.toThrow();
+            expect((view.toJSON().nav as any).next).toBe('/relative/path');
         });
     });
 
@@ -280,14 +279,14 @@ describe('BaseView - Navigation URL Validation', () => {
     describe('Error Handling', () => {
         it('should throw InvalidParameterError for invalid URLs', () => {
             try {
-                view.setNext('not-a-url');
-                fail('Should have thrown');
+                view.setNext('javascript:alert(1)');
+                throw new Error('Should have thrown');
             } catch (error) {
                 expect(error).toBeInstanceOf(InvalidParameterError);
                 const err = error as InvalidParameterError;
                 expect(err.parameterName).toBe('url');
-                expect(err.value).toBe('not-a-url');
-                expect(err.constraint).toContain('Invalid navigation URL');
+                expect(err.value).toBe('javascript:alert(1)');
+                expect(err.constraint).toContain('Invalid navigation target');
             }
         });
 

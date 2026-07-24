@@ -99,7 +99,8 @@ export class FormView extends BaseView {
         fieldLabel: string,
         params?: FormFieldParams
     ): this {
-        if (!fieldId || !fieldLabel || !fieldType) {
+        // Separators are visual-only and legitimately carry an empty label.
+        if (!fieldId || !fieldType || (fieldType !== 'separator' && !fieldLabel)) {
             throw new MissingRequiredParameterError('fieldId, fieldLabel, and fieldType');
         }
 
@@ -123,7 +124,8 @@ export class FormView extends BaseView {
 
     /**
      * Defines the submit button for the form
-     * Convention: Mobile app POSTs to {service.baseUrl}/{formId}
+     * Convention: the client submits to the exact, validated service URL whose
+     * response returned this form. The payload cannot provide another URL.
      *
      * @param text - Button text (e.g., "Register", "Submit")
      * @param method - HTTP method (default: POST)
@@ -293,15 +295,17 @@ export class FormView extends BaseView {
      * Adds a visual separator to group form fields
      * Separators are rendered as gaps or lines by the mobile app renderer
      * @param fieldId - Optional field ID. If not provided, auto-generates a unique ID
+     * @param label - Optional label. Empty by default; the mobile renderer may
+     *   display it once separator-label rendering lands
      * @returns this for chaining
      * @example
      * form.addTextField('name', 'Name', true)
      *     .addSeparator()
      *     .addEmailField('email', 'Email', true);
      */
-    addSeparator(fieldId?: string): this {
+    addSeparator(fieldId?: string, label: string = ''): this {
         const separatorId = fieldId || `separator-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-        return this.addField('separator', separatorId, '', {});
+        return this.addField('separator', separatorId, label, {});
     }
 
     /**

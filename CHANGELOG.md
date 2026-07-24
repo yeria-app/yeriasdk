@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-07-24
+
+### Added
+- **Canonical Yeria link builders** (`YeriaLink`) — typed helpers to generate cross-service deeplinks: `service`, `component`, `chat`, `pin`, `subscribe`, plus `isValid`/`is_valid`. Exposed in both the JS and Python SDKs with byte-identical output frozen by shared golden vectors (`tests/fixtures/yeria_link_validation.json`).
+- Card and Carousel views accept canonical Yeria links in their action targets.
+- **FormView separators accept an optional label** — `addSeparator(fieldId?, label?)` / `add_separator(field_id, label)`. Empty by default; the mobile app will render the label once separator-label support lands.
+
+### Changed
+- **Standardized short deeplink routes** — canonical route table is now the single contract: `dl/s` (service), `dl/n` (subscribe), `dl/v?p=` (component), `dl/c` (chat), `dl/p` (pin), for both `yeria://` and `https://yeria.app`. Legacy `/service/{serviceId}/...` links are rejected, not aliased.
+- `docs/deeplink-implementation.md` updated to the short-route table.
+
+### Fixed
+- `addSeparator()` / `add_separator()` no longer throw — the empty-label guard in `addField`/`add_field` now exempts separators (JS + Python). Previously any separator raised `MissingRequiredParameterError` before the downstream validator's separator exemption could run.
+
+## [1.2.0] - 2026-07-06
+
+### Added
+- Two-symbol public surface, provider error contract, and GPS `maxAccuracy` field.
+
+### Fixed
+- JS/Python signing parity made byte-identical (compact JSON, null-link omission), frozen by a permanent parity test.
+
+## [1.1.0] - 2026-06-21
+
+### Added
+- Complete Python SDK port with signing/verification parity to the JS SDK.
+
+<!-- Legacy entries below use the pre-rename `jsonapp-js` version scheme (superseded by the 1.x `@numerum-tech/yeriasdk` line above). -->
+
 ## [3.0.0] - 2025-01-28
 
 ### BREAKING CHANGES

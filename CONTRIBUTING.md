@@ -29,7 +29,7 @@ Please be respectful and constructive in all interactions.
 
 ```bash
 # Clone your fork
-git clone https://github.com/numerum-tech/yeriasdk.git
+git clone https://github.com/yeria-app/yeriasdk.git
 cd yeriasdk
 
 # Install dependencies

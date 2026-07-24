@@ -1,6 +1,7 @@
 import { BaseView } from './base-view';
 import { CarouselContent, CarouselSettings, CarouselSlide, CardAction, HttpMethod } from '../types';
 import { MissingRequiredParameterError, ElementNotFoundError } from '../errors';
+import { YeriaLink } from './yeria-link';
 
 // CarouselView organises multiple spotlight slides for mobile hero banners or promotional decks.
 
@@ -118,7 +119,9 @@ export class CarouselView extends BaseView {
             method,
             confirmMessage: options.confirmMessage,
             href: options.href
-                ? this.assertNavigationTarget('href', options.href, {
+                ? YeriaLink.isValid(options.href)
+                    ? options.href.trim()
+                    : this.assertNavigationTarget('href', options.href, {
                     allowRelative: true,
                     allowViewId: false
                 })

@@ -28,7 +28,7 @@ Rejected notifications are **not** persisted — your service cannot probe the u
 
 ### Recommended onboarding UX
 
-Since your service cannot auto-subscribe a user, present an "Enable notifications" call-to-action in your Yeria views when a user first engages with the service. The CTA should deep-link to the Yeria subscription sheet (`yeria://services/{serviceId}/subscribe` on mobile, or `/services/{serviceId}?subscribe=1` on web), which prompts the user to grant consent.
+Since your service cannot auto-subscribe a user, present an "Enable notifications" call-to-action in your Yeria views when a user first engages with the service. The CTA should use the canonical Yeria deeplink (`yeria://dl/n/{serviceId}`, or `https://yeria.app/dl/n/{serviceId}`), which prompts the user to grant consent.
 
 Handle `SUBSCRIPTION_*` error codes gracefully — a 403 from the notifications endpoint is an expected outcome for any user who has not opted in, not an infrastructure failure. Consider rate-limiting retries so your service doesn't hammer the endpoint on every rejection.
 

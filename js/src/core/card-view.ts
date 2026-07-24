@@ -9,6 +9,7 @@ import {
     HttpMethod
 } from '../types';
 import { InvalidParameterError, MissingRequiredParameterError } from '../errors';
+import { YeriaLink } from './yeria-link';
 
 // CardView is a compact "product sheet" view that highlights a single item with stats, sections and actions.
 
@@ -150,7 +151,9 @@ export class CardView extends BaseView {
             method,
             confirmMessage: options.confirmMessage,
             href: options.href
-                ? this.assertNavigationTarget('href', options.href, {
+                ? YeriaLink.isValid(options.href)
+                    ? options.href.trim()
+                    : this.assertNavigationTarget('href', options.href, {
                     allowRelative: true,
                     allowViewId: false
                 })
