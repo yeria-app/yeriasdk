@@ -31,7 +31,7 @@ const views: BaseView[] = [];
 
 const registrationForm = yeriaApp
     .createFormView('user-registration', 'User Registration')
-    .setNote('Please fill in all required fields')
+    .setIntro('Please fill in all required fields')
     .addTextField('firstName', 'First Name', true, 50)
     .addTextField('lastName', 'Last Name', true, 50)
     .addEmailField('email', 'Email Address', true)

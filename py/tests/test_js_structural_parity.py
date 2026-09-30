@@ -76,7 +76,12 @@ def _build(ui, name):
     if name == "card":
         return (
             ui.create_card_view("cd", "Card").set_intro("sub").set_description("desc")
-            .add_stat("Views", "42").add_action("/open", "Open").to_json()
+            .add_stat("Views", "42")
+            .add_section("Specs", "a • b")
+            .add_paragraph("  note ", size="sm", italic=True)
+            .add_spacer("lg")
+            .add_separator(" Details ")
+            .add_action("/open", "Open").to_json()
         )
     if name == "timeline":
         return ui.create_timeline_view("tl", "Timeline").add_event("Started", "2026-01-01", "desc").to_json()

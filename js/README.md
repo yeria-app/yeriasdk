@@ -509,6 +509,32 @@ en production.**
 
 ### YeriaApp sécurisé
 
+Une identité visuelle facultative peut être déclarée une seule fois. Elle est
+recopiée dans chaque vue signée. Yeria dérive automatiquement le canvas de
+`primary` avec le même traitement que pour sa propre couleur primaire par défaut. Le logo
+du service ne passe pas par le SDK : il se téléverse dans la console
+fournisseur (registre Yeria, soumis à la revue) et l'application l'affiche
+avant même la première vue.
+
+Au-delà de `primary`, cinq clés facultatives (offre Premium) : `primaryDark`
+et `secondaryDark` (mode sombre), `secondary` (pastilles, puces, anneaux de
+progression), `font` (`default`, `inter`, `nunito`, `poppins`, `serif`) et
+`shape` (`rounded`, `soft`, `square`). Le SDK ignore l'offre du service :
+l'application borne un service gratuit à `primary`.
+
+```typescript
+const yeriaApp = new YeriaApp({
+  appId: 'my-backend-service',
+  branding: {
+    primary: '#E85D04',
+    primaryDark: '#FFB870',
+    secondary: '#168A5B',
+    font: 'poppins',
+    shape: 'soft'
+  }
+});
+```
+
 ```typescript
 import { YeriaApp } from '@numerum-tech/yeriasdk';
 
@@ -736,7 +762,8 @@ Classe de base pour toutes les vues avec méthodes communes :
 ### FormView
 Gestion des formulaires avec validation avancée :
 - `setIntro()` - Texte d'introduction du formulaire (recommandé)
-- `setNote()` - Note introductive (déprécié, utilisez `setIntro()`)
+- `setNote()` - Déprécié et ignoré par l'application mobile ; utilisez
+  `setIntro()` ou `addParagraph()`
 - `addField()` - Ajout de champ générique
 - `addTextField()`, `addEmailField()`, `addPhoneField()`, `addPasswordField()` - Champs texte
 - `addNumberField()`, `addDateField()` - Champs numériques et date
@@ -801,7 +828,8 @@ Présenter des fiches riches :
 - `setSubtitle()` - Sous-titre court
 - `setDescription()` - Texte détaillé
 - `addStat()` - Statistiques clés (prix, stock…)
-- `addSection()` - Contenu structuré (atouts, détails)
+- `addSection()` - Contenu structuré (atouts, détails) ; « • » sépare les puces
+- `addParagraph()`, `addSpacer()`, `addSeparator()` - Les éléments de mise en page du formulaire, parmi les sections
 - `addAction()` - Boutons d'action
 
 ### CarouselView

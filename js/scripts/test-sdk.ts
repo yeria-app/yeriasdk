@@ -36,7 +36,7 @@ console.log('🔑 Public key length:', yeriaApp.getPublicKey().length);
 section('Test 2: FormView creation and validation');
 const registrationForm = yeriaApp
     .createFormView('user-registration', 'User Registration')
-    .setNote('Please fill in your information')
+    .setIntro('Please fill in your information')
     .addTextField('firstName', 'First Name', true, 50)
     .addEmailField('email', 'Email Address', true)
     .addPasswordField('password', 'Password', 8)

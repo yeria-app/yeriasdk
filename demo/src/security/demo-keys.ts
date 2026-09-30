@@ -39,3 +39,15 @@ export const DEMO_KEYS = {
   privateKey: DEMO_PRIVATE_KEY,
   publicKey: DEMO_PUBLIC_KEY,
 };
+
+// La demo ne declare AUCUNE identite par defaut : ses vues rendent le theme
+// standard de l'application. Cette identite « Terre » n'est qu'un theme
+// proposé par le formulaire api/forms/theming, qui l'applique a la demande.
+export const DEMO_BRANDING = {
+  primary: '#E85D04',
+  primaryDark: '#FFB870',
+  secondary: '#168A5B',
+  secondaryDark: '#5FD3A1',
+  font: 'poppins',
+  shape: 'soft',
+} as const;

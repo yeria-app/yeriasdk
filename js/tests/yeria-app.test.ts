@@ -94,6 +94,93 @@ describe('YeriaApp - Security Tests', () => {
     });
 
     describe('Envelope shape', () => {
+        it('should include normalized branding in the signed view', () => {
+            const brandedApp = new YeriaApp({
+                appId: 'branded-app',
+                branding: { primary: '  #E85D04 ' }
+            });
+            const form = YeriaUI.createFormView('brand-form', 'Branded form');
+            form.addTextField('name', 'Name');
+            const envelope = brandedApp.serve(form);
+
+            expect(JSON.parse(envelope.payload).view.branding).toEqual({
+                primary: '#E85D04'
+            });
+        });
+
+        it('should reject an invalid branding primary', () => {
+            expect(() => new YeriaApp({
+                appId: 'bad-brand',
+                branding: { primary: 'orange' }
+            })).toThrow('branding.primary');
+        });
+
+        it('should carry colours only: an unknown branding key is dropped', () => {
+            // The logo belongs to the registry (reviewed there), never to a view.
+            const app = new YeriaApp({
+                appId: 'brand-extra',
+                branding: { primary: '#E85D04', logo: 'img/mark.png' } as any
+            });
+            const form = YeriaUI.createFormView('f', 'F');
+            form.addTextField('name', 'Name');
+            expect(JSON.parse(app.serve(form).payload).view.branding).toEqual({
+                primary: '#E85D04'
+            });
+        });
+
+        it('should emit every branding key in the fixed order, whatever the input order', () => {
+            // The object is signed as emitted; Python builds the same order.
+            const app = new YeriaApp({
+                appId: 'brand-full',
+                branding: {
+                    shape: 'soft', font: 'poppins', primary: ' #E85D04 ',
+                    secondaryDark: '#5FD3A1', secondary: '#168A5B', primaryDark: '#FFB870'
+                }
+            });
+            const form = YeriaUI.createFormView('f', 'F');
+            form.addTextField('name', 'Name');
+            const branding = JSON.parse(app.serve(form).payload).view.branding;
+            expect(JSON.stringify(branding)).toBe(
+                '{"primary":"#E85D04","primaryDark":"#FFB870","secondary":"#168A5B",'
+                + '"secondaryDark":"#5FD3A1","font":"poppins","shape":"soft"}'
+            );
+        });
+
+        it('should omit absent optional branding keys and trim the present ones', () => {
+            const app = new YeriaApp({
+                appId: 'brand-partial',
+                branding: { primary: '#E85D04', font: ' serif ', primaryDark: undefined } as any
+            });
+            const form = YeriaUI.createFormView('f', 'F');
+            form.addTextField('name', 'Name');
+            expect(JSON.stringify(JSON.parse(app.serve(form).payload).view.branding))
+                .toBe('{"primary":"#E85D04","font":"serif"}');
+        });
+
+        it.each([
+            ['primaryDark', { primary: '#E85D04', primaryDark: 'red' }],
+            ['secondary', { primary: '#E85D04', secondary: '#12345' }],
+            ['secondaryDark', { primary: '#E85D04', secondaryDark: 'red' }],
+            ['font', { primary: '#E85D04', font: 'roboto' }],
+            ['font', { primary: '#E85D04', font: 'Poppins' }],
+            ['shape', { primary: '#E85D04', shape: 'pill' }],
+        ])('should reject an invalid branding.%s at construction', (key, branding) => {
+            expect(() => new YeriaApp({ appId: 'bad', branding: branding as any }))
+                .toThrow(`branding.${key}`);
+        });
+
+        it('should drop a retired or unknown branding key such as header', () => {
+            const app = new YeriaApp({
+                appId: 'brand-unknown',
+                branding: { primary: '#E85D04', header: 'brand', shape: 'square' } as any
+            });
+            const form = YeriaUI.createFormView('f', 'F');
+            form.addTextField('name', 'Name');
+            expect(JSON.parse(app.serve(form).payload).view.branding).toEqual({
+                primary: '#E85D04', shape: 'square'
+            });
+        });
+
         it('should return { payload: string, signature: string }', () => {
             const form = YeriaUI.createFormView('shape-test', 'Test');
             form.addTextField('name', 'Name', true);

@@ -6,7 +6,10 @@ import {
     CardSection,
     CardStat,
     CardActionVariant,
-    HttpMethod
+    CardLayoutBlock,
+    HttpMethod,
+    ParagraphSize,
+    SpacerSize
 } from '../types';
 import { InvalidParameterError, MissingRequiredParameterError } from '../errors';
 import { YeriaLink } from './yeria-link';
@@ -145,6 +148,55 @@ export class CardView extends BaseView {
         return this;
     }
 
+    /**
+     * Free text among the sections — the form's `addParagraph`, drawn the
+     * same way. Four relative sizes, bold, italic; nothing richer, a card is
+     * not a document. Takes its place in `sections` in call order.
+     */
+    addParagraph(
+        text: string,
+        options: { size?: ParagraphSize; bold?: boolean; italic?: boolean } = {}
+    ): this {
+        if (typeof text !== 'string' || text.trim() === '')
+            throw new InvalidParameterError('text', text, 'paragraph text must be a non-empty string');
+
+        const size = options.size ?? 'md';
+        if (!['xl', 'lg', 'md', 'sm'].includes(size))
+            throw new InvalidParameterError('size', size, "size must be 'xl', 'lg', 'md' or 'sm'");
+
+        const block: CardLayoutBlock = { type: 'paragraph', text: text.trim(), size };
+        if (options.bold) block.bold = true;
+        if (options.italic) block.italic = true;
+        (this.content as CardContent).sections.push(block);
+        return this;
+    }
+
+    /**
+     * Vertical breathing space between two blocks — the form's `addSpacer`.
+     * Three steps; the client decides what each one measures. It replaces the
+     * spacing the client would otherwise put between the two blocks.
+     */
+    addSpacer(size: SpacerSize = 'md'): this {
+        if (!['sm', 'md', 'lg'].includes(size))
+            throw new InvalidParameterError('size', size, "size must be 'sm', 'md' or 'lg'");
+
+        (this.content as CardContent).sections.push({ type: 'spacer', size });
+        return this;
+    }
+
+    /**
+     * Horizontal rule between two blocks, with an optional label — the
+     * form's `addSeparator`. No id here: a card block is never submitted.
+     */
+    addSeparator(label?: string): this {
+        const block: CardLayoutBlock = { type: 'separator' };
+        const trimmed = label?.trim();
+        if (trimmed) block.label = trimmed;
+        (this.content as CardContent).sections.push(block);
+        return this;
+    }
+
+    /** Removes the sections AND the layout elements placed among them. */
     clearSections(): this {
         (this.content as CardContent).sections = [];
         return this;

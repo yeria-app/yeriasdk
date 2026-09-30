@@ -4,15 +4,12 @@
 
 The `FormView` component is used to create dynamic forms with various field types, validation rules, and submission actions. It supports a wide range of input types including text, email, password, number, date, select, file uploads, voice and video recording, GPS coordinates, and more.
 
-Forms submit to the exact service URL whose response returned the form. That URL
-is retained by the client, validated to remain inside the service's declared
-base URL area, and is not configurable in the form payload. `content.submit`
-controls only the button presentation and HTTP method.
+Forms submit to the exact service URL whose response returned the form. That URL is retained by the client, validated to remain inside the service's declared base URL area, and is not configurable in the form payload. `content.submit` controls only the button presentation and HTTP method.
 
 ## Fields Description
 
 | Field | Type | Required | Description |
-|-------|------|----------|-------------|
+|-------|-------|-------|-------|
 | `id` | `string` | Yes | Unique identifier for the form view |
 | `type` | `string` | Yes | Always `"Form"` |
 | `content` | `FormContent` | Yes | Form content object |
@@ -30,12 +27,12 @@ controls only the button presentation and HTTP method.
 | `content.secondary.method` | `HttpMethod` | No | `submit` mode only (default: `"POST"`) |
 | `content.secondary.validate` | `boolean` | No | Whether the form must be valid first. Defaults to `false` in `navigate` mode, `true` in `submit` mode |
 | `content.secondary.confirmMessage` | `string` | No | Optional confirmation dialog message |
-| `content.fields` | `FormField[]` | Yes | Array of form fields (at least one input field required) |
+| `content.fields` | `FormField[]` | Yes | Array of form fields (at least one non-separator field required) |
 | `content.fields[].fieldType` | `string` | Yes | Field type: `"text"`, `"email"`, `"password"`, `"number"`, `"date"`, `"select"`, `"photo"`, `"file"`, `"audio"`, `"video"`, `"gps"`, `"pluscode"`, `"hidden"`, `"textarea"`, `"phone"`, `"url"`, `"checkbox"`, `"separator"`, `"paragraph"`, `"spacer"` |
 | `content.fields[].fieldId` | `string` | Yes | Unique identifier for the field |
 | `content.fields[].fieldLabel` | `string` | Yes | Display label for the field |
-| `content.fields[].value` | `unknown` | No | Default/pre-filled value. On a media field (`photo`, `file`, `audio`, `video`) this is the **relative path** of a file the provider already holds — an array when `multiple` is set. See *Serving stored media* below |
-| `content.fields[].size` | `"xl" \| "lg" \| "md" \| "sm"` | No | `paragraph`: text size, 24 / 18 / 14 / 12 px. Default `"md"` |
+| `content.fields[].value` | `unknown` | No | Default/pre-filled value. On a media field (`photo`, `file`, `audio`, `video`) this is the **relative path** of a file the provider already holds — an array when `multiple` is set |
+| `content.fields[].size` | `"xl" \| "lg" \| "md" \| "sm"` | No | `paragraph`: text size, four relative steps the renderer maps onto its own type scale. Default `"md"` |
 | `content.fields[].size` | `"sm" \| "md" \| "lg"` | No | `spacer`: how much blank space. Default `"md"` |
 | `content.fields[].bold` | `boolean` | No | `paragraph` only |
 | `content.fields[].italic` | `boolean` | No | `paragraph` only |
@@ -67,11 +64,11 @@ controls only the button presentation and HTTP method.
 ## Methods
 
 | Method | Parameters | Returns | Description |
-|--------|------------|---------|-------------|
+|-------|-------|-------|-------|
 | `setIntro(intro: string)` | `intro` - Introduction text | `this` | Sets the introduction text displayed above form fields |
-| `setNote(note: string)` | `note` - Note text | `this` | Small print under the intro. Rendered smaller and dimmed — a caveat, a legal mention, a count. Distinct from `setIntro()`, not a replacement for it |
-| `addParagraph(text, options?)` | `text` - Text to display<br>`options` - `{size, bold, italic}` | `this` | Adds displayed text among the fields. Not an input: no value, never submitted, skipped by validation |
-| `secondaryButton(text, url, options?)` | `text` - Button label<br>`url` - Destination<br>`options` - `{mode, method, validate, confirmMessage}` | `this` | Adds a second action under the submit button |
+| `setNote(note: string)` | note | `this` | Small print under the intro. Rendered smaller and dimmed — a caveat, a legal mention, a count. Distinct from setIntro(), not a replacement for it |
+| `addParagraph(text, options?)` | text, {size, bold, italic} | `this` | Adds displayed text among the fields. Not an input: no value, never submitted, skipped by validation |
+| `secondaryButton(text, url, options?)` | text, url, {mode, method, validate, confirmMessage} | `this` | Adds a second action under the submit button |
 | `belongsToProcess(processId, options?)` | `processId` - Process ID<br>`options` - Process options (processName, currentStep, totalSteps, stepName, canGoBack, canSkip) | `this` | Associates form with a multi-step process workflow |
 | `addField(fieldType, fieldId, fieldLabel, params?)` | `fieldType` - Field type<br>`fieldId` - Unique field ID<br>`fieldLabel` - Display label<br>`params` - Field parameters | `this` | Adds a field with validation |
 | `submitButton(text, method?, confirmMessage?)` | `text` - Button text<br>`method` - HTTP method (default: POST)<br>`confirmMessage` - Optional confirmation | `this` | Defines the submit button |
@@ -110,10 +107,10 @@ controls only the button presentation and HTTP method.
 | `toJSON()` | - | `Record<string, unknown>` | Returns JSON representation (inherited from BaseView) |
 | `setState(key, value)` | `key` - State key<br>`value` - State value | `void` | Sets view state (inherited from BaseView) |
 | `getState(key)` | `key` - State key | `unknown` | Gets view state (inherited from BaseView) |
-| `setNext(url)` | `url` - URL or path of the next view | `this` | Forward control of a paginated sequence, drawn by the client — see the Navigation reference on the docs site |
-| `setPrev(url)` | `url` - URL or path of the previous view | `this` | Backward control of the same sequence. NOT where the back gesture leads — see the Navigation reference on the docs site |
-| `setEntry(entry)` | `entry` - `'push'`, `'replace'`, or an integer <= 1 | `this` | How this view enters the client's navigation stack (default: `push`) — see the Navigation reference on the docs site |
-| `setPage(current, total?)` | `current` - 1-based position<br>`total` - sequence length, when known | `this` | Where this view sits in its sequence; the client draws the indicator — see the Navigation reference on the docs site |
+| `setNext(url)` | `url` - URL or path of the next view | `this` | Forward control of a paginated sequence, drawn by the client — see [Navigation](navigation.md) |
+| `setPrev(url)` | `url` - URL or path of the previous view | `this` | Backward control of the same sequence. NOT where the back gesture leads — see [Navigation](navigation.md) |
+| `setEntry(entry)` | `entry` - `'push'`, `'replace'`, or an integer <= 1 | `this` | How this view enters the client's navigation stack (default: `push`) — see [Navigation](navigation.md) |
+| `setPage(current, total?)` | `current` - 1-based position<br>`total` - sequence length, when known | `this` | Where this view sits in its sequence; the client draws the indicator — see [Navigation](navigation.md) |
 | `setProcess(processId, context?)` | `processId` - Process ID<br>`context` - Process context | `this` | Sets process context (inherited from BaseView) |
 
 ## JavaScript Sample Code
@@ -191,65 +188,38 @@ const form = yeriaApp
     .submitButton('Send report', 'POST');
 ```
 
-#### How the recording reaches the provider
+There is no separate upload endpoint. The captured file rides the **normal form submission**: the client sends `multipart/form-data` to the same validated service URL that returned the form, with the recording as a file part named after its `fieldId` (`fieldId_0`, `fieldId_1`, … when `multiple` is set), and every other field as a regular form part.
 
-There is no separate upload endpoint. The captured file rides the **normal form
-submission**: the client sends `multipart/form-data` to the same validated
-service URL that returned the form, with the recording as a file part named
-after its `fieldId` (`fieldId_0`, `fieldId_1`, … when `multiple` is set), and
-every other field as a regular form part.
-
-Sizing is the provider's responsibility. `maxDuration` × `quality` is what
-bounds the payload:
+Sizing is the provider's responsibility. `maxDuration` × `quality` is what bounds the payload:
 
 | `quality` | Approx. resolution / bitrate | Per minute |
-|-----------|------------------------------|-----------|
+|-------|-------|-------|
 | `low` | 480p / ~1 Mbps | ~7 MB |
 | `medium` (default) | 720p / ~2.5 Mbps | ~19 MB |
 | `high` | 1080p / ~4 Mbps | ~30 MB |
 
-Audio is far smaller — voice at the renderer's default encoding runs roughly
-0.5 MB per minute. Figures are typical mobile-encoder output, not a guarantee:
-set the service's request body limit above what the declared constraints imply,
-with headroom. Use `maxSize` to make the client refuse an oversized file before
-it starts uploading, rather than failing mid-request.
+Audio is far smaller — voice at the renderer's default encoding runs roughly 0.5 MB per minute. Figures are typical mobile-encoder output, not a guarantee: set the service's request body limit above what the declared constraints imply, with headroom. Use `maxSize` to make the client refuse an oversized file before it starts uploading, rather than failing mid-request.
 
 `maxDuration` is mandatory on `video` — building the view throws without it.
 
-#### What a capture actually produces
+`accept` declares what the field will *take*. What the renderer *captures* is narrower, and a provider that stores or re-serves the file should plan for it:
 
-`accept` declares what the field will *take*. What the renderer *captures* is
-narrower, and a provider that stores or re-serves the file should plan for it:
-
-| | Captured as |
-|---|---|
+|  | Captured as |
+|-------|-------|
 | `audio` | AAC, mono, ~64 kbps, in an MP4 container (`.m4a`) |
 | `video` | H.264 in an MP4 container (`.mp4`), at the `quality` resolution |
 | orientation | Whichever way the phone was held. Portrait and landscape are both possible |
 
-**Video orientation travels as MP4 rotation metadata, not as rotated pixels.**
-The stored frames are in sensor orientation and the container carries the
-rotation to apply; that is how every phone camera writes video. A player that
-honours the metadata shows it upright, and one that ignores it shows it on its
-side. If the service re-encodes, thumbnails, or streams the clip, it has to
-carry that rotation through — dropping it is the usual reason a clip that
-looked right on the phone appears sideways afterwards.
+**Video orientation travels as MP4 rotation metadata, not as rotated pixels.** The stored frames are in sensor orientation and the container carries the rotation to apply; that is how every phone camera writes video. A player that honours the metadata shows it upright, and one that ignores it shows it on its side. If the service re-encodes, thumbnails, or streams the clip, it has to carry that rotation through — dropping it is the usual reason a clip that looked right on the phone appears sideways afterwards.
 
-A file chosen from the library instead of recorded can be anything `accept`
-allows — any orientation, any duration.
+A file chosen from the library instead of recorded can be anything `accept` allows — any orientation, any duration.
 
-#### Validate everything again on the server
+The renderer enforces `maxDuration` by stopping the recorder, and refuses a capture that violates `minDuration` or `maxSize`. None of that is a guarantee:
 
-The renderer enforces `maxDuration` by stopping the recorder, and refuses a
-capture that violates `minDuration` or `maxSize`. None of that is a guarantee:
-
-- `minDuration` is checked only against a **recorded** take. A file picked from
-  the library has no measured duration, so the rule is skipped rather than
-  enforced on no evidence.
+- `minDuration` is checked only against a **recorded** take. A file picked from the library has no measured duration, so the rule is skipped rather than enforced on no evidence.
 - Every constraint lives in a payload the client could ignore.
 
-Treat the declared constraints as the contract you asked for, and re-check
-duration, size and type on arrival.
+Treat the declared constraints as the contract you asked for, and re-check duration, size and type on arrival.
 
 ### Form with GPS Field
 
@@ -332,8 +302,7 @@ const form = yeriaApp
 
 ### Spacers
 
-A separator draws a rule and says "a new group starts here". A spacer draws
-nothing and simply lets a group breathe:
+A separator draws a rule and says "a new group starts here". A spacer draws nothing and simply lets a group breathe:
 
 ```javascript
 form.addTextField('street', 'Street')
@@ -343,22 +312,15 @@ form.addTextField('street', 'Street')
     .addTextField('comment', 'Anything to add?');
 ```
 
-Three steps only — `sm`, `md` (default), `lg` — and no number: you ask for a
-gap, the client decides what it measures. A size outside them is refused when
-you build the view, not silently normalised.
+Three steps only — `sm`, `md` (default), `lg` — and no number: you ask for a gap, the client decides what it measures. A size outside them is refused when you build the view, not silently normalised.
 
-Like separators, spacers carry no value, are skipped by validation, never reach
-the submission, and do not count towards "at least one field".
+Like separators, spacers carry no value, are skipped by validation, never reach the submission, and do not count towards "at least one field".
 
 ### Displayed Text Between Fields
 
-`addParagraph` puts text among the fields — a heading, an instruction, or the
-data the user has to read in order to answer. It is not an input: it holds no
-value, is never submitted, and validation skips it.
+`addParagraph` puts text among the fields — a heading, an instruction, or the data the user has to read in order to answer. It is not an input: it holds no value, is never submitted, and validation skips it.
 
-The four sizes are **sizes, not roles**. Nothing here says a block is a
-heading; what a size means is the provider's call. Bold and italic are separate,
-explicit choices.
+The four sizes are **sizes, not roles**. Nothing here says a block is a heading; what a size means is the provider's call. Bold and italic are separate, explicit choices.
 
 ```javascript
 form
@@ -369,8 +331,8 @@ form
   .addTextField('id_number', 'ID number', true);
 ```
 
-| size | rendering |
-|------|-----------|
+| size | Rendering |
+|-------|-------|
 | `xl` | 24 px |
 | `lg` | 18 px |
 | `md` | 14 px — default |
@@ -378,8 +340,7 @@ form
 
 ### A Second Action
 
-A form has one submit. `secondaryButton` adds a second action under it, in the
-same footer bar and at secondary weight — Skip, Cancel, Save as draft.
+A form has one submit. `secondaryButton` adds a second action under it, in the same footer bar and at secondary weight — Skip, Cancel, Save as draft.
 
 `mode` says what happens to what the user typed, and it is explicit on purpose:
 
@@ -396,16 +357,14 @@ form.secondaryButton('Save as draft', 'drafts', {
 });
 ```
 
-`validate` decides whether the form must be valid first. It defaults to `false`
-in `navigate` mode — a Skip blocked by an empty required field would be
-absurd — and to `true` in `submit` mode.
+`validate` decides whether the form must be valid first. It defaults to `false` in `navigate` mode — a Skip blocked by an empty required field would be absurd — and to `true` in `submit` mode.
 
 ### Read-only and Disabled Fields
 
 Both are field states, and they are not interchangeable:
 
-| | Editable | Visible | Submitted |
-|---|---|---|---|
+|  | Editable | Visible | Submitted |
+|-------|-------|-------|-------|
 | `readonly` | no | yes, at full legibility | **yes** |
 | `disabled` | no | yes, dimmed | **no** |
 
@@ -419,9 +378,7 @@ form
 
 ### Serving Stored Media
 
-A media field can show a file the provider **already holds** instead of asking
-for a new capture. Set `value` to the file's path and `readonly` to `true`: the
-player works, the add and delete controls disappear.
+A media field can show a file the provider **already holds** instead of asking for a new capture. Set `value` to the file's path and `readonly` to `true`: the player works, the add and delete controls disappear.
 
 ```javascript
 form
@@ -436,11 +393,7 @@ form
   });
 ```
 
-**The path must be relative to your service base.** This is the platform's
-asset policy, not a convention: `http(s)://`, `//host`, `file://` and `data:`
-are refused by the renderer and nothing is displayed. To serve from a CDN,
-answer the relative URL with a redirect — the player follows the 3xx to your
-signed URL transparently.
+**The path must be relative to your service base.** This is the platform's asset policy, not a convention: `http(s)://`, `//host`, `file://` and `data:` are refused by the renderer and nothing is displayed. To serve from a CDN, answer the relative URL with a redirect — the player follows the 3xx to your signed URL transparently.
 
 ### Form in Process Workflow
 

@@ -8,7 +8,7 @@ const yeriaApp = new YeriaApp({
   appId: 'demo-app-carousels',
   viewExpirationMinutes: 30,
   privateKey: DEMO_KEYS.privateKey,
-  publicKey: DEMO_KEYS.publicKey
+  publicKey: DEMO_KEYS.publicKey,
 });
 
 // Comprehensive CarouselView demonstration with all features

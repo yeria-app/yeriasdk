@@ -139,3 +139,12 @@ __pycache__/
 # JetBrains IDE
 .idea/
 *.iml
+
+# macOS
+.DS_Store
+
+# graft's local graph cache — regenerable, not committed (run `graft build`).
+/graft/
+
+# Opt-in demo endpoint persists received multipart files here.
+/demo/tmp/upload-proof/

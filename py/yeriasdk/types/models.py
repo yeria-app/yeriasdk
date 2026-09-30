@@ -179,7 +179,7 @@ class FormFieldParams(FieldValidation):
     display: Optional[str] = None
 
     # paragraph: displayed text, never an input. A SIZE, not a role:
-    # 'xl' (24px) | 'lg' (18px) | 'md' (14px, default) | 'sm' (12px)
+    # Relative typography step: 'xl' | 'lg' | 'md' (default) | 'sm'.
     size: Optional[str] = None
     bold: Optional[bool] = None
     italic: Optional[bool] = None
@@ -228,7 +228,38 @@ class CardStat:
 @dataclass
 class CardSection:
     heading: str
+    # A body containing « • » is drawn as a bulleted list, one bullet per
+    # segment; any other body is a paragraph.
     body: str
+
+
+# Free layout elements a card may interleave with its sections — the same
+# three the form offers (add_paragraph, add_spacer, add_separator), drawn the
+# same way. They live in `sections`, in call order, and carry a `type`; a
+# section never does. Mirrors CardLayoutBlock in js/src/types/index.ts.
+@dataclass
+class CardParagraphBlock:
+    text: str
+    size: str = "md"  # 'xl' | 'lg' | 'md' | 'sm'
+    bold: Optional[bool] = None
+    italic: Optional[bool] = None
+    type: str = "paragraph"
+
+
+@dataclass
+class CardSpacerBlock:
+    size: str = "md"  # 'sm' | 'md' | 'lg'
+    type: str = "spacer"
+
+
+@dataclass
+class CardSeparatorBlock:
+    label: Optional[str] = None
+    type: str = "separator"
+
+
+CardLayoutBlock = Union[CardParagraphBlock, CardSpacerBlock, CardSeparatorBlock]
+CardBlock = Union[CardSection, CardLayoutBlock]
 
 
 @dataclass
@@ -255,7 +286,8 @@ class CardContent:
     # dessine que ce que le fournisseur a pose, comme pour CardSection.
     stats_heading: Optional[str] = None
     stats: List[CardStat] = field(default_factory=list)
-    sections: List[CardSection] = field(default_factory=list)
+    # Titled sections and free layout elements, in call order.
+    sections: List[CardBlock] = field(default_factory=list)
     actions: List[CardAction] = field(default_factory=list)
     meta: Optional[Dict[str, Any]] = None
 
@@ -682,4 +714,3 @@ class SecureNotificationResponse:
     # Selecteur d'un point de developpement, present uniquement quand le
     # service tourne depuis un deploiement de travail. Couvert par la signature.
     dev_key_id: Optional[str] = None
-

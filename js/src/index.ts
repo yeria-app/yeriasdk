@@ -25,7 +25,11 @@ export type { YeriaLinkFormat, YeriaLinkOptions } from './core/yeria-link';
 
 export type {
     YeriaAppConfig,
+    ServiceBranding,
+    BrandingFont,
+    BrandingShape,
 } from './core/yeria-app';
+export { BRANDING_FONTS, BRANDING_SHAPES } from './core/yeria-app';
 export type {
     SignedEnvelope,
     DecodedPayload,

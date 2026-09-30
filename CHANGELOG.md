@@ -5,6 +5,82 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0] - 2026-09-24
+
+A service can now look like itself. `branding` carries a bounded identity —
+one required colour and five optional keys — copied into every signed view;
+the app derives everything else, and the service logo takes another road
+entirely.
+
+### Added
+
+- **`branding` in the client configuration** — `branding: { primary: '#E85D04' }`
+  (`ServiceBranding(primary=...)` in Python), declared once on `YeriaApp` and
+  copied into **every** signed view. The app seeds its controls from that
+  colour (buttons, focus rings, floating labels) and tints the canvas behind
+  the provider's content with the same derivation it applies to Yeria's own
+  accent, so a service gets a recognisable atmosphere without ever setting a
+  background or a text colour. The app's title bar and the form's action bar
+  take a tint of the primary colour, a step stronger than the canvas (the
+  dark primary seeds it in dark mode); views without branding keep Yeria's
+  neutral chrome. Six-digit `#RRGGBB` only; anything else is refused when the
+  client is constructed, not when a view is served.
+
+  Colours only, on purpose. **The service logo does not travel in a view**: it
+  is uploaded in the provider console (a square PNG, 512×512 minimum), goes
+  through the registry review like the rest of the listing, and the app shows
+  it in the catalog, on the service page and in the title bar **before the
+  first view loads**. A view cannot swap it. A `logo` key handed to `branding`
+  is dropped, never signed.
+
+- **Premium branding keys** on `branding` — `primaryDark` and `secondaryDark`
+  (the colours used in dark mode; without them the app derives from the light
+  ones), `secondary` (badges, bullets, quote rules, progress rings),
+  `font` (`default`, `inter`, `nunito`, `poppins`, `serif`; the families are
+  bundled in the app) and `shape` (`rounded`, `soft`, `square`; buttons,
+  fields, cards, tiles and badges). All optional, validated at construction
+  like `primary`, omitted from the signed view when absent. Python: snake_case
+  fields on `ServiceBranding` (`primary_dark`, `secondary_dark`), camelCase on
+  the wire. `BRANDING_FONTS` / `BRANDING_SHAPES` are exported.
+- **Card layout elements** — `addParagraph`, `addSpacer` and `addSeparator`
+  on `CardView` (Python: `add_paragraph`, `add_spacer`, `add_separator`), the
+  form's three layout elements drawn the same way. They take their place in
+  `sections`, in call order, each carrying a `type`; a section never does. A
+  paragraph alone is content, a spacer or a separator alone is not. The
+  card's `addSeparator` takes a label, not an id: a card block is never
+  submitted.
+- **The SDK does not know the plan.** It signs whatever identity it is
+  given; the app reads the service's plan from the registry and clamps a
+  free-plan service to `primary`. A service can prepare its identity before
+  upgrading.
+
+### Changed
+
+- **Paragraph sizes are relative steps** — `xl` / `lg` / `md` / `sm` no longer
+  promise pixel values. The renderer maps them onto its current typography
+  scale, so a provider picks a step and the app keeps one service reading like
+  the next. The four names and the `md` default are unchanged.
+
+### Deprecated
+
+- **`setNote` / `set_note`** — added in 1.4.0, retired one release later: the
+  mobile renderer no longer draws form notes, so the text went nowhere. Use
+  `setIntro()` for context under the title or `addParagraph()` for text
+  between fields. The methods still serialise and still sign identically; they
+  just warn.
+
+### Demo
+
+- No identity by default: every route renders the app's standard theme. A
+  top-level entry, **Identité visuelle** (`/api/forms/theming`), lets you pick
+  a preset theme (Yeria default, Terre, Savane, Océan), a font and a corner
+  scale; the same form comes back under that identity with a paragraph
+  listing the six `branding` keys applied.
+- An opt-in **media upload proof** (`UPLOAD_PROOF_DIR` in `demo/.env`): the
+  rich form's photo, file, audio and video fields land on disk and come back
+  as stored, read-only media, which is the round trip a provider actually
+  ships.
+
 ## [1.4.1] - 2026-09-05
 
 Two of the SDK's calls to Yeria could not have worked: their URLs matched no

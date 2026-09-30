@@ -43,12 +43,14 @@ die() { echo "[github] ECHEC : $*" >&2; exit 1; }
 # rendue. Ils sortent quand même — ils sont la référence, et le site yeria.app
 # reste l'endroit où on les LIT.
 EXCLUDE=(
+  ".ignore"
   ".wolf"
   "PYTHON_PORT_PLAN.md"
   "PYTHON_SDK_ACCURACY_ASSESSMENT.md"
   "PYTHON_SDK_FIX_PLAN.md"
   "RELEASE_READINESS_ASSESSMENT.md"
   "docs/compose-view-draft.md"
+  "docs/navigation-model-draft.md"
   "docs/sdk-architecture-refactor-plan.md"
   "specs/check-fr.py"
 )

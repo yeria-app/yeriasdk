@@ -177,10 +177,17 @@ export abstract class BaseView {
             case 'Card':
                 if (typeof this.content === 'object' && this.content !== null) {
                     const card = this.content as { description?: string; stats?: unknown[]; sections?: unknown[] };
+                    // A spacer or a separator is not content: a card made of
+                    // nothing but rules would pass and render empty.
+                    const readable = (block: unknown): boolean => {
+                        if (typeof block !== 'object' || block === null) return false;
+                        const type = (block as { type?: unknown }).type;
+                        return type === undefined || type === 'paragraph';
+                    };
                     const hasDetail =
                         (typeof card.description === 'string' && card.description.trim().length > 0) ||
                         (Array.isArray(card.stats) && card.stats.length > 0) ||
-                        (Array.isArray(card.sections) && card.sections.length > 0);
+                        (Array.isArray(card.sections) && card.sections.some(readable));
 
                     if (!hasDetail) {
                         errors.push(createValidationError('Card view requires at least a description, stat, or section'));

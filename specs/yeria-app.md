@@ -5,15 +5,13 @@
 The SDK exposes **two** objects to providers. The split is by secret ownership.
 
 | Object | Holds a key? | Role |
-|---|---|---|
+|-------|-------|-------|
 | `YeriaUI` | No | View **factory**. Builds typed views. Pure, stateless, never instantiated — used like `Math` or `JSON`. |
 | `YeriaApp` | Yes (Ed25519) | Everything that needs the private key: **signing** views, verifying inbound user tokens, notifications, key rotation. |
 
-Building is keyless; signing is not. You build a view with `YeriaUI`, then hand
-it to `app.serve(view)` — a role handoff, not a round-trip on one object.
+Building is keyless; signing is not. You build a view with `YeriaUI`, then hand it to `app.serve(view)` — a role handoff, not a round-trip on one object.
 
-Everything else (`YeriaSigner`, `YeriaPublicKeys`, the platform client, the
-verifiers) is **internal**. It is not exported and you should not reach for it.
+Everything else (`YeriaSigner`, `YeriaPublicKeys`, the platform client, the verifiers) is **internal**. It is not exported and you should not reach for it.
 
 ```javascript
 import { YeriaUI, YeriaApp } from '@numerum-tech/yeriasdk';
@@ -31,21 +29,16 @@ const view = YeriaUI.createFormView('registration', 'User Registration')
 return app.serve(view);   // → { payload, signature }
 ```
 
----
-
 ## The two key systems
 
 Do not confuse them. They serve different directions of traffic.
 
 | Key | Algorithm | Who owns it | What it does |
-|---|---|---|---|
+|-------|-------|-------|-------|
 | Yeria platform key | RSA (**RS256**) | Yeria | Signs the user tokens your backend receives. You only ever **verify** with it — the SDK fetches and caches it for you. |
 | Your service key | **Ed25519** | You | Signs the view envelopes you return, and the provider→Yeria calls. Registered as a public key on your service; the private half never leaves your backend. |
 
-`app.verifyUserToken()` rejects any token whose header `alg` is not `RS256`.
-View envelopes and provider-signed envelopes are always Ed25519.
-
----
+`app.verifyUserToken()` rejects any token whose header `alg` is not `RS256`. View envelopes and provider-signed envelopes are always Ed25519.
 
 ## YeriaUI — the view factory
 
@@ -75,9 +68,7 @@ Each returns a fresh typed view builder.
 fromJson(json: Record<string, unknown>): BaseView
 ```
 
-Turns wire JSON (a static template, or a view you persisted in your own DB)
-back into a typed, validated view instance. Use it when you store screens as
-JSON rather than rebuilding them field by field:
+Turns wire JSON (a static template, or a view you persisted in your own DB) back into a typed, validated view instance. Use it when you store screens as JSON rather than rebuilding them field by field:
 
 ```javascript
 const view = YeriaUI.fromJson(await db.screens.get('home'));
@@ -90,19 +81,14 @@ return app.serve(view);
 error(spec: ProviderErrorSpec): ProviderErrorBody
 ```
 
-Builds an error body byte-identical to the platform's own error shape, without
-a signature. Use it when you have no key at hand (startup failure, config
-error). When you *do* have a key, prefer `app.serveError()` — a signed error
-is one the mobile can trust.
-
----
+Builds an error body byte-identical to the platform's own error shape, without a signature. Use it when you have no key at hand (startup failure, config error). When you *do* have a key, prefer `app.serveError()` — a signed error is one the mobile can trust.
 
 ## YeriaApp — the key holder
 
 ### Configuration
 
 | Field | Type | Required | Description |
-|-------|------|----------|-------------|
+|-------|-------|-------|-------|
 | `appId` | `string` | Yes | Unique application identifier. Carried inside every signed payload. |
 | `privateKey` | `string` | No | Ed25519 private key, PEM (PKCS#8). Generated on the fly if omitted — fine for tests, never for production. |
 | `publicKey` | `string` | No | Ed25519 public key, PEM (SPKI). Derived from `privateKey` when omitted. |
@@ -110,6 +96,40 @@ is one the mobile can trust.
 | `allowedDomains` | `string[]` | No | Allowed domains for view serving (default `[]`). |
 | `viewExpirationMinutes` | `number` | No | View lifetime used by `verifyIntegrity` (default `60`). |
 | `notificationTimeout` | `number` | No | HTTP timeout in ms for platform calls (default `5000`). |
+| `branding` | `ServiceBranding` | No | Visual identity of the service, copied into every signed view: `primary` (required) and the Premium keys `primaryDark`, `secondary`, `secondaryDark`, `font`, `shape`. Anything invalid is refused at construction. See [Visual identity](#visual-identity). |
+
+### Visual identity
+
+Declared once, `branding` rides inside every view the app serves, so the client can style a service consistently without the provider repeating anything per view. Only `primary` is required; the other keys belong to the Premium plan. Yeria's navigation, security banners and surrounding chrome are never restyled.
+
+| Key | Type | Default | Effect in the app |
+|-------|-------|-------|-------|
+| `primary` | `#RRGGBB` | required | Seeds the controls (buttons, focus rings, floating labels) and tints the canvas behind the content; the title bar and the form's action bar take a stronger tint of the same colour. |
+| `primaryDark` | `#RRGGBB` | derived from `primary` | Replaces `primary` when the app is in dark mode. |
+| `secondary` | `#RRGGBB` | same as the primary | Secondary buttons and passive marks: badges, list bullets, quote rules, progress rings. Primary buttons and links stay on the primary colour. |
+| `secondaryDark` | `#RRGGBB` | derived from `secondary` | Replaces `secondary` in dark mode. |
+| `font` | `default` \| `inter` \| `nunito` \| `poppins` \| `serif` | `default` | Typeface of the service's views, text and buttons alike. `default` is the app's own font (Inter today); `serif` is Lora. The families are bundled in the app, nothing is downloaded. |
+| `shape` | `rounded` \| `soft` \| `square` | `rounded` | Corner scale of buttons, fields, cards, tiles and badges, from pill-shaped to almost square. |
+
+Values are checked when the client is constructed, not when a view is served: six-digit `#RRGGBB` colours, exact lower-case names for `font` and `shape`. A key left out is not signed; an unknown key is dropped.
+
+**Plan.** The keys beyond `primary` are honoured for services on the Premium plan. For a service on the free plan the app keeps `primary` and ignores the rest: the view still renders in the service's colour, with the app's font and corners. The SDK does not know the plan and signs whatever it is given, so a service can prepare its identity before upgrading.
+
+Colours, a typeface and a corner scale only. **The service logo does not travel in a view**: it is uploaded in the provider console (a square PNG, 512×512 minimum), reviewed with the rest of the listing, and shown in the catalog, on the service page and in the title bar before the first view loads. A view cannot swap it, and a `logo` key handed to `branding` is dropped, never signed.
+
+```javascript
+const app = new YeriaApp({
+  appId: 'my-backend-service',
+  privateKey: process.env.YERIA_PRIVATE_KEY,
+  branding: {
+    primary: '#E85D04',
+    primaryDark: '#FFB870',
+    secondary: '#168A5B',
+    font: 'poppins',
+    shape: 'soft'
+  }
+});
+```
 
 ### Serving views
 
@@ -117,8 +137,7 @@ is one the mobile can trust.
 serve(view: BaseView): SignedEnvelope
 ```
 
-Signs a view into a v3 envelope. This is the **single** signing path — send the
-result as-is:
+Signs a view into a v3 envelope. This is the **single** signing path — send the result as-is:
 
 ```javascript
 res.json(app.serve(view));
@@ -128,10 +147,7 @@ res.json(app.serve(view));
 serveError(spec: ProviderErrorSpec): SignedEnvelope
 ```
 
-Same envelope, carrying an error instead of a view. The mobile verifies the
-signature before showing anything, so a signed error cannot be spoofed by a
-network attacker. The `status` field is advisory — the mobile does not rely on
-the HTTP status code.
+Same envelope, carrying an error instead of a view. The mobile verifies the signature before showing anything, so a signed error cannot be spoofed by a network attacker. The `status` field is advisory — the mobile does not rely on the HTTP status code.
 
 ### SignedEnvelope
 
@@ -142,14 +158,12 @@ the HTTP status code.
 }
 ```
 
-The signature covers the exact bytes of `payload`. A verifier must check those
-bytes **before** parsing the JSON — re-serializing first would change the bytes
-and break the signature.
+The signature covers the exact bytes of `payload`. A verifier must check those bytes **before** parsing the JSON — re-serializing first would change the bytes and break the signature.
 
 ### Verification & keys
 
 | Method | Returns | Description |
-|---|---|---|
+|-------|-------|-------|
 | `verifyIntegrity(envelope: SignedEnvelope)` | `boolean` | Verifies an envelope this app signed. Throws when the appId mismatches, the view has expired, or the signature is invalid. |
 | `getServicePublicKey()` | `string` | Your service's Ed25519 public key (PEM). This is the value you register on your Yeria service. |
 
@@ -162,14 +176,9 @@ async verifyUserToken(
 ): Promise<YeriaTokenClaims>
 ```
 
-Verifies a Yeria-issued user token (RS256). Resolves the token's `kid` against
-Yeria's public keys through an internal, TTL-cached key store — you never wire
-a resolver or hold PEMs yourself. Enforces `iss='yeria'` and `exp > now`; pass
-`expectedAudience` to pin the token to your service id.
+Verifies a Yeria-issued user token (RS256). Resolves the token's `kid` against Yeria's public keys through an internal, TTL-cached key store — you never wire a resolver or hold PEMs yourself. Enforces `iss='yeria'` and `exp > now`; pass `expectedAudience` to pin the token to your service id.
 
-Throws `YeriaPlatformUnreachableError` when Yeria cannot be reached (surface
-`503` — the token might be fine). An unknown or expired key surfaces as a
-verification error (surface `401`).
+Throws `YeriaPlatformUnreachableError` when Yeria cannot be reached (surface `503` — the token might be fine). An unknown or expired key surfaces as a verification error (surface `401`).
 
 ### User details
 
@@ -180,14 +189,12 @@ async fetchUserDetails(opts: {
 }): Promise<UserDetails>
 ```
 
-Fetches a Yeria user's profile, **authorized by the user's own live service
-token** — not by your notification preferences and not by a bearer token in the
-body. The credential on the wire is the Ed25519 signature over the envelope.
+Fetches a Yeria user's profile, **authorized by the user's own live service token** — not by your notification preferences and not by a bearer token in the body. The credential on the wire is the Ed25519 signature over the envelope.
 
 ### Notifications
 
 | Method | Returns | Description |
-|---|---|---|
+|-------|-------|-------|
 | `signNotification(notification: Notification)` | `SecureNotificationResponse` | Signs without sending. |
 | `async notify(notification: Notification)` | `Promise<void>` | Signs and POSTs to Yeria. |
 
@@ -199,22 +206,18 @@ See [Notifications](notification.md) for delivery rules and subscription errors.
 async rotateKey(...)
 ```
 
-Registers a new Ed25519 public key for your service. The retired key stays
-valid for a short grace window so in-flight requests do not break.
+Registers a new Ed25519 public key for your service. The retired key stays valid for a short grace window so in-flight requests do not break.
 
 ### Static escape hatches
 
-Prefer the instance methods. These exist for the rare case where you already
-hold the exact PEM, or want no network at all.
+Prefer the instance methods. These exist for the rare case where you already hold the exact PEM, or want no network at all.
 
 | Method | Description |
-|---|---|
+|-------|-------|
 | `static verifySignature(publicKey, payload, signature, onError?)` | Raw Ed25519 verify over a payload string against a PEM. |
 | `static signView(view, appId, privateKey, timestamp?)` | Sign a view into a `SignedEnvelope` from a one-off key. |
 | `static verifyYeriaToken(jwt, yeriaPublicKey, expectedAudience?)` | Verify a user token against a known PEM. Pure, no network. |
 | `static async verifyYeriaTokenWithResolver(jwt, resolver, expectedAudience?)` | Same, but you supply the `kid` resolver. |
-
----
 
 ## Complete example
 
@@ -261,8 +264,6 @@ The payload the mobile receives:
   "signature": "MEUCIQD…"
 }
 ```
-
----
 
 ## See also
 

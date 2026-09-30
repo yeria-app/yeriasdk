@@ -8,7 +8,7 @@ const yeriaApp = new YeriaApp({
   appId: 'demo-app-timelines',
   viewExpirationMinutes: 30,
   privateKey: DEMO_KEYS.privateKey,
-  publicKey: DEMO_KEYS.publicKey
+  publicKey: DEMO_KEYS.publicKey,
 });
 
 // Comprehensive TimelineView demonstration with all features

@@ -5,6 +5,7 @@ FormView - A view for displaying forms with various field types
 from typing import Optional, Dict, Any, List, Union
 from datetime import datetime
 import re
+import warnings
 
 from ..core.base_view import BaseView
 from ..types.models import (
@@ -120,12 +121,18 @@ class FormView(BaseView):
         return self._set_intro_text("intro", intro)
 
     def set_note(self, note: str) -> "FormView":
-        """Small print under the intro — a caveat, a legal mention, a count.
+        """Deprecated: set a legacy form note.
 
-        The mobile app has always rendered it; it simply had no setter.
+        The mobile renderer no longer displays form notes. Use ``set_intro``
+        for header context or ``add_paragraph`` for text in the form.
         """
         if not isinstance(note, str):
             raise InvalidParameterError("note", note, "note must be a string")
+        warnings.warn(
+            "set_note() is deprecated; use set_intro() or add_paragraph()",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         self.content["note"] = note
         return self
 
@@ -147,7 +154,7 @@ class FormView(BaseView):
 
         Args:
             text: the text to display
-            size: 'xl' (24px), 'lg' (18px), 'md' (14px, default) or 'sm' (12px)
+            size: Relative typography step: 'xl', 'lg', 'md' (default) or 'sm'
             bold: render bold
             italic: render italic
         """

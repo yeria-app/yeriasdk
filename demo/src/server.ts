@@ -134,6 +134,7 @@ demo.get('/', (req: Request, res: Response) => {
     grid.addAction('/api/forms/contact', 'Fiche contact', 'L\'exemple publie sur la page d\'accueil : nom, prenom, e-mail', ICON('account-circle-outline'));
     grid.addAction('/api/forms', 'FormView', 'Index des types de champs, par famille : texte, nombres, choix, images, fichiers, enregistrements, localisation', ICON('edit-document-outline'));
     grid.addAction('/api/forms/rich', 'Formulaire riche', 'Paragraphes nommes, separateur, espaces, readonly/disabled, medias deja fournis, second bouton', ICON('mic-none-outline'));
+    grid.addAction('/api/forms/theming', 'Identité visuelle', 'Choisissez un thème, une police et des coins : le formulaire revient habillé de vos choix', ICON('palette-outline'));
     grid.addAction('/api/readers', 'ReaderView', 'Affichage de contenu riche avec plusieurs types d\'éléments', ICON('menu-book-outline'));
     grid.addAction('/api/readers/paged/1', 'Lecteur paginé', 'Document en trois pages : flèches et indicateur « Page 1 / 3 » dessinés par le client', ICON('menu-book-outline'));
     grid.addAction('/api/cards', 'CardView', 'Vue fiche produit compacte avec statistiques et actions', ICON('credit-card-outline'));

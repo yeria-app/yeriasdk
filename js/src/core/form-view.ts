@@ -169,7 +169,9 @@ export class FormView extends BaseView {
 
     /**
      * Small print under the intro — a usage caveat, a legal mention, a count.
-     * The mobile app has always rendered it; it simply had no setter here.
+     *
+     * @deprecated The mobile renderer no longer displays form notes. Use
+     * `setIntro()` for header context or `addParagraph()` for text in the form.
      */
     setNote(note: string): this {
         if (typeof note !== 'string')

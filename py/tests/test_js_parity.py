@@ -131,6 +131,20 @@ def test_accented_notification_signature_matches_js(app, vector):
     assert signed.signature == vector["noteAccentSignature"]
 
 
+def test_branding_bytes_and_signature_match_js(app, vector):
+    # Same scrambled input as the generator: the normalized object must
+    # serialize to the same bytes and a view carrying it must sign the same.
+    from yeriasdk.core.yeria_app import _normalize_branding
+
+    branding = _normalize_branding(vector["brandingInput"])
+    assert json.dumps(branding, separators=(",", ":")) == vector["brandingBytes"]
+
+    view = {**vector["floatViewJson"], "branding": branding}
+    env = app._signer.sign_view(view, vector["appId"], vector["timestamp"])
+    assert env.payload == vector["brandedPayload"]
+    assert env.signature == vector["brandedSignature"]
+
+
 def test_boundary_float_payload_bytes_match_js(app, vector):
     """`1.0`, `1e-7`, `1e21`, `-0.0` : Python les ecrivait `1.0`, `1e-07`,
     `1e+21`, `-0.0` la ou JS ecrit `1`, `1e-7`, `1e+21`, `0`. Une latitude

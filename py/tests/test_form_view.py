@@ -36,6 +36,15 @@ class TestFormView:
         form.set_intro("Please fill in the form")
         assert form.content["intro"] == "Please fill in the form"
 
+    def test_set_note_is_deprecated_but_remains_compatible(self):
+        form = FormView("test-form", "Test Form")
+
+        with pytest.warns(DeprecationWarning, match="set_note.*deprecated"):
+            result = form.set_note("Legacy note")
+
+        assert result is form
+        assert form.content["note"] == "Legacy note"
+
     def test_add_text_field(self):
         """Test adding a text field"""
         form = FormView("test-form", "Test Form")

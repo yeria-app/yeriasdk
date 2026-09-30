@@ -225,7 +225,8 @@ export type SelectDisplay = 'dropdown' | 'radio';
  * does, by picking a size and, if wanted, an emphasis.
  *
  * Four steps, matching the app's own type scale:
- *   'xl' — 24px   'lg' — 18px   'md' — 14px (default)   'sm' — 12px
+ * The renderer maps these relative steps onto its current typography scale.
+ * `md` is the default.
  *
  * A closed list rather than a free number: an open scale would let every
  * provider invent its own typography, and the renderer could no longer keep
@@ -285,8 +286,26 @@ export interface CardStat {
 
 export interface CardSection {
     heading: string;
+    /**
+     * Section text. A body containing « • » is drawn as a bulleted list, one
+     * bullet per segment; any other body is a paragraph.
+     */
     body: string;
 }
+
+/**
+ * Free layout elements a card may interleave with its sections — the same
+ * three the form offers (`addParagraph`, `addSpacer`, `addSeparator`), drawn
+ * the same way. They live in `sections`, in call order; a client that does
+ * not know them draws a paragraph as plain text and skips the other two.
+ */
+export type CardLayoutBlock =
+    | { type: 'paragraph'; text: string; size: ParagraphSize; bold?: boolean; italic?: boolean }
+    | { type: 'spacer'; size: SpacerSize }
+    | { type: 'separator'; label?: string };
+
+/** One entry of `CardContent.sections`: a titled section or a layout element. */
+export type CardBlock = CardSection | CardLayoutBlock;
 
 export type CardActionVariant = 'primary' | 'secondary' | 'link';
 
@@ -316,7 +335,11 @@ export interface CardContent {
      */
     statsHeading?: string;
     stats: CardStat[];
-    sections: CardSection[];
+    /**
+     * Titled sections and free layout elements, in call order. Layout
+     * elements carry a `type`; a section never does.
+     */
+    sections: CardBlock[];
     actions: CardAction[];
     meta?: Record<string, unknown>;
 }

@@ -129,8 +129,73 @@ class CardView(BaseView):
         )
         return self
 
+    def add_paragraph(
+        self,
+        text: str,
+        size: str = "md",
+        bold: bool = False,
+        italic: bool = False,
+    ) -> "CardView":
+        """Free text among the sections — the form's ``add_paragraph``, drawn
+        the same way. Four relative sizes, bold, italic; nothing richer, a
+        card is not a document. Takes its place in ``sections`` in call order.
+
+        Args:
+            text: the text to display
+            size: 'xl', 'lg', 'md' (default) or 'sm'
+            bold: render bold
+            italic: render italic
+        """
+        if not isinstance(text, str) or not text.strip():
+            raise InvalidParameterError(
+                "text", text, "paragraph text must be a non-empty string"
+            )
+        if size not in ("xl", "lg", "md", "sm"):
+            raise InvalidParameterError(
+                "size", size, "size must be 'xl', 'lg', 'md' or 'sm'"
+            )
+
+        block: Dict[str, Any] = {"type": "paragraph", "text": text.strip(), "size": size}
+        if bold:
+            block["bold"] = True
+        if italic:
+            block["italic"] = True
+        self.content["sections"].append(block)
+        return self
+
+    def add_spacer(self, size: str = "md") -> "CardView":
+        """Vertical breathing space between two blocks — the form's
+        ``add_spacer``. Three steps; the client decides what each one
+        measures. It replaces the spacing the client would otherwise put
+        between the two blocks.
+
+        Args:
+            size: 'sm', 'md' (default) or 'lg'
+        """
+        if size not in ("sm", "md", "lg"):
+            raise InvalidParameterError(
+                "size", size, "size must be 'sm', 'md' or 'lg'"
+            )
+
+        self.content["sections"].append({"type": "spacer", "size": size})
+        return self
+
+    def add_separator(self, label: str = "") -> "CardView":
+        """Horizontal rule between two blocks, with an optional label — the
+        form's ``add_separator``. No id here: a card block is never submitted.
+
+        Args:
+            label: optional text drawn at the left of the rule
+        """
+        block: Dict[str, Any] = {"type": "separator"}
+        trimmed = label.strip() if isinstance(label, str) else ""
+        if trimmed:
+            block["label"] = trimmed
+        self.content["sections"].append(block)
+        return self
+
     def clear_sections(self) -> "CardView":
-        """Clear all sections"""
+        """Remove the sections AND the layout elements placed among them"""
         self.content["sections"] = []
         return self
 

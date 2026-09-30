@@ -9,7 +9,7 @@ const yeriaApp = new YeriaApp({
   appId: 'demo-app-cards',
   viewExpirationMinutes: 30,
   privateKey: DEMO_KEYS.privateKey,
-  publicKey: DEMO_KEYS.publicKey
+  publicKey: DEMO_KEYS.publicKey,
 });
 
 // Comprehensive CardView demonstration
@@ -31,38 +31,43 @@ router.get('/', (req: Request, res: Response) => {
     .addStat('Garantie', '1 an')
     .addStat('Disponibilité', 'Immédiate')
 
-    // Sections
+    // Sections — un corps qui contient « • » est dessine en liste a puces.
     .addSection('Fonctionnalités', 'Processeur avancé • Écran haute résolution • Longue autonomie • Qualité de fabrication premium • Design élégant')
+    // Elements de mise en page libres, les memes que dans les formulaires :
+    // ils prennent place parmi les sections, dans l'ordre des appels.
+    .addSeparator('Détails techniques')
     .addSection('Spécifications', 'Puce M3 Pro • 18 Go RAM • 512 Go SSD • Écran Retina XDR 16,2" • macOS Sonoma')
+    .addParagraph('Les caractéristiques peuvent varier selon la configuration choisie.', { size: 'sm', italic: true })
+    .addSpacer('lg')
     .addSection('Garantie', 'Garantie limitée 1 an • Support technique gratuit 90 jours • Extension possible')
     .addSection('Contenu de la Boîte', 'MacBook Pro • Câble USB-C vers MagSafe 3 • Adaptateur secteur USB-C 140W • Documentation')
 
     // Actions avec toutes les variantes et options
     .addAction('Acheter Maintenant', 'POST', {
       confirmMessage: 'Confirmer l\'achat de ce produit ?',
-      icon: '🛒',
+      icon: 'cart',
       variant: 'primary'
     })
     .addAction('Ajouter au Panier', 'POST', {
-      icon: '➕',
+      icon: 'add',
       variant: 'secondary'
     })
     .addAction('Ajouter aux Favoris', 'PUT', {
-      icon: '❤️',
+      icon: 'heart',
       variant: 'secondary'
     })
     .addAction('Partager le Produit', 'GET', {
-      icon: '📤',
+      icon: 'share',
       variant: 'link'
     })
     .addAction('Voir les Détails', 'GET', {
       href: '/products/details',
-      icon: 'ℹ️',
+      icon: 'info',
       variant: 'link'
     })
     .addAction('Comparer', 'GET', {
       href: '/products/compare',
-      icon: '⚖️',
+      icon: 'compare',
       variant: 'link'
     })
 

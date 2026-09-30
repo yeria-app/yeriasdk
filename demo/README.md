@@ -99,6 +99,12 @@ npm run dev
 
 The application will be available at `http://localhost:3000`
 
+### End-to-end file upload proof (development only)
+
+Set `ENABLE_DEV_DEMOS=true` in `demo/.env` to expose development-only demonstrations, including **Preuve d'envoi médias (dev)** in the FormView index. Its receiver persists every uploaded photo, file, recorded audio and recorded video under `demo/tmp/upload-proof` and returns each saved path, byte count and SHA-256 digest in the signed result view.
+
+Set `UPLOAD_PROOF_DIR` to override that directory. These files are intentionally retained for manual inspection and must be deleted by the developer when no longer needed. Keep this endpoint disabled outside a controlled development environment.
+
 ## 📚 API Documentation
 
 ### Base URL

@@ -32,6 +32,17 @@ from ..utils.validators import (
 )
 
 
+def _readable_block(block) -> bool:
+    """A section or a paragraph is content; a spacer or a separator is not.
+
+    A card made of nothing but rules would otherwise pass and render empty.
+    """
+    if not isinstance(block, dict):
+        return False
+    block_type = block.get("type")
+    return block_type is None or block_type == "paragraph"
+
+
 class BaseView(ABC):
     """Abstract base for every Yeria SGUI view (Form, Reader, Card, Map, ...).
 
@@ -195,7 +206,7 @@ class BaseView(ABC):
                 has_detail = (
                     (isinstance(card.get("description"), str) and len(card.get("description", "").strip()) > 0)
                     or (isinstance(card.get("stats"), list) and len(card.get("stats", [])) > 0)
-                    or (isinstance(card.get("sections"), list) and len(card.get("sections", [])) > 0)
+                    or (isinstance(card.get("sections"), list) and any(_readable_block(b) for b in card.get("sections", [])))
                 )
 
                 if not has_detail:

@@ -5,19 +5,23 @@
 The `CardView` component is a compact "product sheet" view that highlights a single item with stats, sections, and actions. It's ideal for displaying product information, user profiles, event details, or any single entity that needs rich presentation.
 
 The card includes:
+
 - Title and intro
 - Description
 - Badge (optional)
 - Hero image (optional)
 - Stats (key-value pairs)
 - Sections (heading + body text)
+- Layout elements among the sections — paragraph, spacer, separator, the same three as the form
 - Action buttons
 - Custom metadata
+
+The client draws the card as a single surface in four zones — header, stats, sections, actions — separated by a full-width rule; an empty zone is not drawn. Stats are a label / value list, never clickable. Actions: the `primary` one as a filled button, the first two `secondary` ones as outlined buttons, every other action (further `secondary`, then `link`) as a list row with a chevron, in the order given.
 
 ## Fields Description
 
 | Field | Type | Required | Description |
-|-------|------|----------|-------------|
+|-------|-------|-------|-------|
 | `id` | `string` | Yes | Unique identifier for the card view |
 | `type` | `string` | Yes | Always `"Card"` |
 | `content` | `CardContent` | Yes | Card content object |
@@ -32,9 +36,15 @@ The card includes:
 | `content.stats` | `CardStat[]` | No | Array of key-value statistics |
 | `content.stats[].label` | `string` | Yes | Stat label |
 | `content.stats[].value` | `string` | Yes | Stat value |
-| `content.sections` | `CardSection[]` | No | Array of descriptive sections |
-| `content.sections[].heading` | `string` | Yes | Section heading |
-| `content.sections[].body` | `string` | Yes | Section body text |
+| `content.sections` | `CardBlock[]` | No | Titled sections and layout elements, in call order. A layout element carries a `type`; a section never does |
+| `content.sections[].heading` | `string` | Yes* | Section heading (sections only) |
+| `content.sections[].body` | `string` | Yes* | Section text. A body containing « • » is drawn as a bulleted list, one bullet per segment |
+| `content.sections[].type` | `string` | No | `"paragraph"`, `"spacer"` or `"separator"` — a layout element, drawn exactly as in a form |
+| `content.sections[].text` | `string` | Yes* | Paragraph text (`paragraph` only) |
+| `content.sections[].size` | `string` | No | `paragraph`: `"xl"`, `"lg"`, `"md"` (default), `"sm"`. `spacer`: `"sm"`, `"md"` (default), `"lg"` |
+| `content.sections[].bold` | `boolean` | No | Paragraph in bold; present only when true |
+| `content.sections[].italic` | `boolean` | No | Paragraph in italics; present only when true |
+| `content.sections[].label` | `string` | No | Separator label, drawn at the left of the rule (`separator` only) |
 | `content.actions` | `CardAction[]` | No | Array of action buttons |
 | `content.actions[].text` | `string` | Yes | Button text |
 | `content.actions[].method` | `HttpMethod` | No | HTTP method (default: POST) |
@@ -51,7 +61,7 @@ The card includes:
 ## Methods
 
 | Method | Parameters | Returns | Description |
-|--------|------------|---------|-------------|
+|-------|-------|-------|-------|
 | `setIntro(intro)` | `intro` - Introduction text | `this` | Sets the line of context displayed under the main title. Refuses a blank value |
 | `setSubtitle(subtitle)` | `subtitle` - Introduction text | `this` | Historical name of `setIntro`, kept. Writes the same key |
 | `setDescription(description)` | `description` - Description text | `this` | Sets the long-form description for the card body |
@@ -61,8 +71,11 @@ The card includes:
 | `setStatsHeading(heading)` | `heading` - Heading text | `this` | Names the stats block. Optional; refuses a blank value |
 | `addStat(label, value)` | `label` - Stat label<br>`value` - Stat value | `this` | Adds a key-value statistic |
 | `clearStats()` | - | `this` | Removes all statistics |
-| `addSection(heading, body)` | `heading` - Section heading<br>`body` - Section body text | `this` | Adds a descriptive section |
-| `clearSections()` | - | `this` | Removes all sections |
+| `addSection(heading, body)` | `heading` - Section heading<br>`body` - Section body text; « • » separates bullets | `this` | Adds a descriptive section |
+| `addParagraph(text, options?)` | `text` - Text to display<br>`options` - `size` (`'xl'`, `'lg'`, `'md'`, `'sm'`), `bold`, `italic` | `this` | Free text among the sections — the form's `addParagraph`, drawn the same way. Refuses a blank text or an unknown size |
+| `addSpacer(size?)` | `size` - `'sm'`, `'md'` (default) or `'lg'` | `this` | Vertical breathing space between two blocks; replaces the spacing the client would otherwise put there |
+| `addSeparator(label?)` | `label` - Optional label | `this` | Horizontal rule between two blocks. Unlike the form's, takes no id: a card block is never submitted |
+| `clearSections()` | - | `this` | Removes all sections and the layout elements placed among them |
 | `addAction(text, method?, options?)` | `text` - Button text<br>`method` - HTTP method (default: POST)<br>`options` - Action options (confirmMessage, href, icon, variant) | `this` | Adds an action button |
 | `clearActions()` | - | `this` | Removes all actions |
 | `setMetadata(meta)` | `meta` - Metadata object | `this` | Sets custom metadata |
@@ -71,10 +84,10 @@ The card includes:
 | `toJSON()` | - | `Record<string, unknown>` | Returns JSON representation (inherited from BaseView) |
 | `setState(key, value)` | `key` - State key<br>`value` - State value | `void` | Sets view state (inherited from BaseView) |
 | `getState(key)` | `key` - State key | `unknown` | Gets view state (inherited from BaseView) |
-| `setNext(url)` | `url` - URL or path of the next view | `this` | Forward control of a paginated sequence, drawn by the client — see the Navigation reference on the docs site |
-| `setPrev(url)` | `url` - URL or path of the previous view | `this` | Backward control of the same sequence. NOT where the back gesture leads — see the Navigation reference on the docs site |
-| `setEntry(entry)` | `entry` - `'push'`, `'replace'`, or an integer <= 1 | `this` | How this view enters the client's navigation stack (default: `push`) — see the Navigation reference on the docs site |
-| `setPage(current, total?)` | `current` - 1-based position<br>`total` - sequence length, when known | `this` | Where this view sits in its sequence; the client draws the indicator — see the Navigation reference on the docs site |
+| `setNext(url)` | `url` - URL or path of the next view | `this` | Forward control of a paginated sequence, drawn by the client — see [Navigation](navigation.md) |
+| `setPrev(url)` | `url` - URL or path of the previous view | `this` | Backward control of the same sequence. NOT where the back gesture leads — see [Navigation](navigation.md) |
+| `setEntry(entry)` | `entry` - `'push'`, `'replace'`, or an integer <= 1 | `this` | How this view enters the client's navigation stack (default: `push`) — see [Navigation](navigation.md) |
+| `setPage(current, total?)` | `current` - 1-based position<br>`total` - sequence length, when known | `this` | Where this view sits in its sequence; the client draws the indicator — see [Navigation](navigation.md) |
 | `setProcess(processId, context?)` | `processId` - Process ID<br>`context` - Process context | `this` | Sets process context (inherited from BaseView) |
 
 ## JavaScript Sample Code
@@ -153,6 +166,22 @@ const card = yeriaApp
     .addSection('Schedule', 'Day 1: Keynotes, Day 2: Workshops, Day 3: Networking')
     .addAction('Register', 'POST')
     .addAction('View Schedule', 'GET', { href: '/events/schedule' });
+```
+
+### Card with Layout Elements
+
+The form's three layout elements take their place among the sections, in call order. A card whose only body is a paragraph is valid; a spacer or a separator alone is not content.
+
+```javascript
+const card = yeriaApp
+    .createCardView('laptop', 'MacBook Pro 16"')
+    .addSection('Features', 'Advanced processor • High-resolution display • Long battery life')
+    .addSeparator('Technical details')
+    .addSection('Specifications', 'M3 Pro chip • 18 GB RAM • 512 GB SSD')
+    .addParagraph('Specifications may vary with the chosen configuration.', { size: 'sm', italic: true })
+    .addSpacer('lg')
+    .addSection('Warranty', '1-year limited warranty • 90 days of free support')
+    .addAction('Buy now', 'POST', { variant: 'primary' });
 ```
 
 ### Card with Multiple Actions
@@ -352,4 +381,3 @@ const card = yeriaApp
   }
 }
 ```
-

@@ -6,7 +6,13 @@ A stateless backend library for building views that are sent to renderers (mobil
 # ── Public surface: two symbols ──────────────────────────────────────────
 # `app`     — the secret-holding half: sign / verify / notify / rotate.
 # `YeriaUI` — the keyless view factory: YeriaUI.create_form_view(...), etc.
-from .core.yeria_app import YeriaApp, YeriaAppConfig
+from .core.yeria_app import (
+    YeriaApp,
+    YeriaAppConfig,
+    ServiceBranding,
+    BRANDING_FONTS,
+    BRANDING_SHAPES,
+)
 from .core.yeria_ui import YeriaUI
 from .core.yeria_link import YeriaLink, YeriaLinkFormat
 # Protocol types
@@ -65,12 +71,15 @@ from .errors import (
     ERROR_CODES,
 )
 
-__version__ = "1.3.0"
+__version__ = "1.5.0"
 
 __all__ = [
     # Public surface: two symbols
     "YeriaApp",
     "YeriaAppConfig",
+    "ServiceBranding",
+    "BRANDING_FONTS",
+    "BRANDING_SHAPES",
     "YeriaUI",
     "YeriaLink",
     "YeriaLinkFormat",

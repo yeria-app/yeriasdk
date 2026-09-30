@@ -9,7 +9,7 @@ const yeriaApp = new YeriaApp({
   appId: 'demo-app-qr',
   viewExpirationMinutes: 30,
   privateKey: DEMO_KEYS.privateKey,
-  publicKey: DEMO_KEYS.publicKey
+  publicKey: DEMO_KEYS.publicKey,
 });
 
 // Main QR route - ActionListView showing QR view types

@@ -23,8 +23,9 @@ singleton. The signer, envelope verifier, kid key cache, and Yeria HTTP client
 are all internal — the methods above are the whole surface.
 """
 
+import re
 from dataclasses import dataclass
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Union
 
 from .base_view import BaseView
 from .yeria_protocol import (
@@ -40,6 +41,32 @@ from .security.yeria_envelope_verifier import YeriaEnvelopeVerifier
 from .security.yeria_user_token_verifier import YeriaUserTokenVerifier
 from .platform.yeria_platform import YeriaPlatform
 from ..types.models import SecureNotificationResponse
+from ..errors import ConfigurationError
+
+
+# Mirrors BRANDING_FONTS / BRANDING_SHAPES in js/src/core/yeria-app.ts — keep
+# both lists identical.
+BRANDING_FONTS = ("default", "inter", "nunito", "poppins", "serif")
+BRANDING_SHAPES = ("rounded", "soft", "square")
+
+
+@dataclass(frozen=True)
+class ServiceBranding:
+    """Bounded visual identity applied to every view served by this app.
+
+    Colours, a font and a corner scale only: the service logo lives in the
+    Yeria registry (uploaded from the provider console, reviewed with the
+    listing), never in a view. Keys beyond ``primary`` are honoured for
+    services on the Premium plan; the SDK signs them regardless, the app
+    decides. Wire keys are camelCase (``primaryDark``, ``secondaryDark``).
+    """
+
+    primary: str
+    primary_dark: Optional[str] = None
+    secondary: Optional[str] = None
+    secondary_dark: Optional[str] = None
+    font: Optional[str] = None
+    shape: Optional[str] = None
 
 
 @dataclass
@@ -53,6 +80,7 @@ class YeriaAppConfig:
     view_expiration_minutes: int = 60
     base_url: Optional[str] = None  # Yeria platform base URL (e.g. https://yeria.app)
     notification_timeout: int = 5
+    branding: Optional[Union[ServiceBranding, Dict[str, str]]] = None
     # Selecteur d'un point de developpement, rendu par le tableau de bord
     # fournisseur apres enregistrement de l'URL et de la cle de developpement
     # (`devkey_...`). Sa PRESENCE dit a Yeria que l'appel vient d'un
@@ -73,6 +101,7 @@ class YeriaApp:
 
     def __init__(self, config: YeriaAppConfig):
         self.config = config
+        self._branding = _normalize_branding(config.branding)
         view_exp = config.view_expiration_minutes or 60
 
         self._signer = YeriaSigner(private_key=config.private_key, public_key=config.public_key)
@@ -96,7 +125,10 @@ class YeriaApp:
         """Sign a view (built via ``YeriaUI.create_form_view(...)`` etc.) into a
         v3 SignedEnvelope ``{ payload, signature }`` — send it as-is. Single
         signing path; view building is keyless and lives on ``YeriaUI``."""
-        return self._signer.sign_view(view.build(), self.config.app_id)
+        built = view.build()
+        if self._branding is not None:
+            built = {**built, "branding": dict(self._branding)}
+        return self._signer.sign_view(built, self.config.app_id)
 
     def serve_error(self, code: str, message: str, status: int = 400, invalid_params=None) -> SignedEnvelope:
         """Sign a provider error into a v3 SignedEnvelope whose payload is
@@ -175,3 +207,65 @@ class YeriaApp:
     def verify_yeria_token_with_resolver(jwt_token: str, resolver: PublicKeyResolver, expected_audience: Optional[Any] = None) -> YeriaTokenClaims:
         """Same verify, but resolve the signing key by ``kid`` instead of a fixed PEM."""
         return YeriaUserTokenVerifier.verify_yeria_token_with_resolver(jwt_token, resolver, expected_audience)
+
+
+_HEX_COLOUR = re.compile(r"#[0-9a-fA-F]{6}")
+
+
+def _branding_colour(value: Any, key: str, required: bool) -> Optional[str]:
+    if value is None and not required:
+        return None
+    colour = value.strip() if isinstance(value, str) else ""
+    if _HEX_COLOUR.fullmatch(colour) is None:
+        raise ConfigurationError(
+            f"branding.{key} must be a six-digit RGB colour such as #E85D04",
+            f"branding.{key}",
+        )
+    return colour
+
+
+def _branding_choice(value: Any, key: str, allowed: tuple) -> Optional[str]:
+    if value is None:
+        return None
+    choice = value.strip() if isinstance(value, str) else ""
+    if choice not in allowed:
+        raise ConfigurationError(
+            f"branding.{key} must be one of {', '.join(repr(a) for a in allowed)}",
+            f"branding.{key}",
+        )
+    return choice
+
+
+def _normalize_branding(
+    branding: Optional[Union[ServiceBranding, Dict[str, str]]]
+) -> Optional[Dict[str, str]]:
+    """Rebuild the branding key by key, in the emission order shared with JS.
+
+    The object is signed as emitted, so the insertion order below IS the
+    contract. Unknown keys never make it through.
+    """
+    if branding is None:
+        return None
+
+    if isinstance(branding, ServiceBranding):
+        raw: Dict[str, Any] = {
+            "primary": branding.primary,
+            "primaryDark": branding.primary_dark,
+            "secondary": branding.secondary,
+            "secondaryDark": branding.secondary_dark,
+            "font": branding.font,
+            "shape": branding.shape,
+        }
+    else:
+        raw = dict(branding)
+
+    out: Dict[str, str] = {"primary": _branding_colour(raw.get("primary"), "primary", True)}
+    for key in ("primaryDark", "secondary", "secondaryDark"):
+        colour = _branding_colour(raw.get(key), key, False)
+        if colour is not None:
+            out[key] = colour
+    for key, allowed in (("font", BRANDING_FONTS), ("shape", BRANDING_SHAPES)):
+        choice = _branding_choice(raw.get(key), key, allowed)
+        if choice is not None:
+            out[key] = choice
+    return out

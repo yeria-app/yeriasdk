@@ -8,6 +8,39 @@ import { YeriaUserTokenVerifier } from './security/yeria-user-token-verifier';
 import { YeriaPlatform } from './platform/yeria-platform-client';
 import { buildProviderError, ProviderErrorSpec } from './provider-error';
 import { stringifyForSigning } from '../utils/signing-json';
+import { ConfigurationError } from '../errors';
+
+/** Font families the app bundles; `default` keeps the app's own font. */
+export const BRANDING_FONTS = ['default', 'inter', 'nunito', 'poppins', 'serif'] as const;
+/** Corner scale applied to buttons, fields, cards and badges. */
+export const BRANDING_SHAPES = ['rounded', 'soft', 'square'] as const;
+export type BrandingFont = typeof BRANDING_FONTS[number];
+export type BrandingShape = typeof BRANDING_SHAPES[number];
+
+/**
+ * Bounded visual identity applied to every view served by this app.
+ * Colours, a font and a corner scale only: the service logo lives in the
+ * Yeria registry (uploaded from the provider console, reviewed with the
+ * listing), never in a view. Keys beyond `primary` are honoured for services
+ * on the Premium plan; the SDK signs them regardless, the app decides.
+ *
+ * Mirrored by py/yeriasdk/core/yeria_app.py — keep both lists identical: the
+ * signed bytes depend on the key order below.
+ */
+export interface ServiceBranding {
+    /** Six-digit RGB colour used as the service primary. */
+    primary: string;
+    /** Primary used when the app is in dark mode; derived from `primary` when absent. */
+    primaryDark?: string;
+    /** Secondary colour (badges, passive emphasis); derived from the primary when absent. */
+    secondary?: string;
+    /** Secondary colour in dark mode; derived from `secondary` when absent. */
+    secondaryDark?: string;
+    /** One of BRANDING_FONTS. */
+    font?: BrandingFont;
+    /** One of BRANDING_SHAPES. */
+    shape?: BrandingShape;
+}
 
 // Types for the secure configuration
 export interface YeriaAppConfig {
@@ -18,6 +51,8 @@ export interface YeriaAppConfig {
     viewExpirationMinutes?: number;
     baseUrl?: string; // Yeria platform base URL (e.g. https://yeria.app) — used for notifications and profile fetch
     notificationTimeout?: number; // HTTP request timeout in ms (default: 5000)
+    /** Visual identity copied into every signed view. */
+    branding?: ServiceBranding;
     /**
      * Selecteur d'un point de developpement, tel que le tableau de bord
      * fournisseur le rend apres l'enregistrement de l'URL et de la cle de
@@ -64,7 +99,8 @@ export class YeriaApp {
         this.config = {
             allowedDomains: [],
             viewExpirationMinutes: 60,
-            ...config
+            ...config,
+            branding: normalizeBranding(config.branding),
         };
 
         this.signer = new YeriaSigner({
@@ -93,7 +129,11 @@ export class YeriaApp {
      * building is keyless and lives on `YeriaUI`.
      */
     serve(view: BaseView): SignedEnvelope {
-        return this.signer.signView(view.build(), this.config.appId);
+        const built = view.build();
+        const brandedView = this.config.branding
+            ? { ...built, branding: { ...this.config.branding } }
+            : built;
+        return this.signer.signView(brandedView, this.config.appId);
     }
 
     /**
@@ -228,4 +268,49 @@ export class YeriaApp {
     ): Promise<YeriaTokenClaims> {
         return YeriaUserTokenVerifier.verifyYeriaTokenWithResolver(jwtToken, resolver, expectedAudience);
     }
+}
+
+const HEX_COLOUR = /^#[0-9a-fA-F]{6}$/;
+
+function brandingColour(value: unknown, key: string, required: boolean): string | undefined {
+    if ((value === undefined || value === null) && !required) return undefined;
+    const colour = typeof value === 'string' ? value.trim() : '';
+    if (!HEX_COLOUR.test(colour)) {
+        throw new ConfigurationError(
+            `branding.${key} must be a six-digit RGB colour such as #E85D04`,
+            `branding.${key}`
+        );
+    }
+    return colour;
+}
+
+function brandingChoice<T extends string>(value: unknown, key: string, allowed: readonly T[]): T | undefined {
+    if (value === undefined || value === null) return undefined;
+    const choice = typeof value === 'string' ? value.trim() : '';
+    if (!(allowed as readonly string[]).includes(choice)) {
+        throw new ConfigurationError(
+            `branding.${key} must be one of ${allowed.map(a => `'${a}'`).join(', ')}`,
+            `branding.${key}`
+        );
+    }
+    return choice as T;
+}
+
+// Rebuilt key by key, in this order: the object is signed as emitted and the
+// Python SDK emits the same order. Unknown keys never make it through.
+function normalizeBranding(branding?: ServiceBranding): ServiceBranding | undefined {
+    if (branding === undefined) return undefined;
+
+    const out: ServiceBranding = { primary: brandingColour(branding.primary, 'primary', true)! };
+    const primaryDark = brandingColour(branding.primaryDark, 'primaryDark', false);
+    if (primaryDark !== undefined) out.primaryDark = primaryDark;
+    const secondary = brandingColour(branding.secondary, 'secondary', false);
+    if (secondary !== undefined) out.secondary = secondary;
+    const secondaryDark = brandingColour(branding.secondaryDark, 'secondaryDark', false);
+    if (secondaryDark !== undefined) out.secondaryDark = secondaryDark;
+    const font = brandingChoice(branding.font, 'font', BRANDING_FONTS);
+    if (font !== undefined) out.font = font;
+    const shape = brandingChoice(branding.shape, 'shape', BRANDING_SHAPES);
+    if (shape !== undefined) out.shape = shape;
+    return out;
 }

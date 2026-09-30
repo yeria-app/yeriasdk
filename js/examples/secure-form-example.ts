@@ -11,7 +11,7 @@ console.log('🔒 Secure FormView example\n');
 try {
     // 1. Build a form and configure the submit button following YeriaApp conventions.
     const form = new FormView('user-profile', 'User Profile')
-        .setNote('Required fields are marked with *')
+        .setIntro('Required fields are marked with *')
         .addTextField('firstName', 'First Name', true, 50)
         .addTextField('lastName', 'Last Name', true, 50)
         .addEmailField('email', 'Email', true)

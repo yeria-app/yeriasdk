@@ -48,6 +48,35 @@ print(response.view)  # The view JSON
 print(response.signature)  # Ed25519 signature
 ```
 
+### Identité visuelle du service
+
+La couleur doit être au format `#RRGGBB`. Le canvas est automatiquement dérivé
+de cette couleur, avec le même traitement que l'identité Yeria par défaut. La
+configuration est incluse dans chaque vue signée. Le logo du service ne passe
+pas par le SDK : il se téléverse dans la console fournisseur (registre Yeria,
+soumis à la revue) et l'application l'affiche avant même la première vue.
+
+Au-delà de `primary`, cinq clés facultatives (offre Premium) : `primary_dark`
+et `secondary_dark` (mode sombre), `secondary` (pastilles, puces, anneaux de
+progression), `font` (`default`, `inter`, `nunito`, `poppins`, `serif`) et
+`shape` (`rounded`, `soft`, `square`). Le SDK ignore l'offre du service :
+l'application borne un service gratuit à `primary`.
+
+```python
+from yeriasdk import ServiceBranding, YeriaApp, YeriaAppConfig
+
+app = YeriaApp(YeriaAppConfig(
+    app_id="my-app",
+    branding=ServiceBranding(
+        primary="#E85D04",
+        primary_dark="#FFB870",
+        secondary="#168A5B",
+        font="poppins",
+        shape="soft",
+    ),
+))
+```
+
 ## Notifications
 
 ```python
@@ -177,7 +206,9 @@ Display geographic data on maps
 The Python SDK maintains API parity with the TypeScript version:
 
 - Same factory methods: `app.create_form_view()`, `app.create_reader_view()`, etc.
-- Same fluent API: `view.add_field().set_intro().submit_button()` (or `set_note()` for backward compatibility)
+- Same fluent API: `view.add_field().set_intro().submit_button()`
+- `set_note()` remains available for backward compatibility but is deprecated
+  and ignored by the mobile renderer; use `set_intro()` or `add_paragraph()`
 - Same validation and security features
 - Same Ed25519 signing and verification
 
